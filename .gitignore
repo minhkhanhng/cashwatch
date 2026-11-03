@@ -1,0 +1,10 @@
+# Dữ liệu cá nhân: không bao giờ đưa lên repo
+*.xlsx
+*.xls
+*.xlsm
+*.csv
+*.json.bak
+
+.DS_Store
+.vercel
+node_modules/
