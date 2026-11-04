@@ -4,7 +4,11 @@
 
 **Mới**
 - **Danh mục tự tạo:** đặt tên, biểu tượng, màu. Tạo ngay trong ô ghi nhanh (ô "Thêm") hoặc ở Cài đặt → Danh mục. Ẩn được danh mục có sẵn.
-- **Nhiều ví:** chạm ô "Tiền đang có" để xem số dư từng ví, thêm ví, chuyển tiền giữa các ví. Chọn ví khi ghi giao dịch. Chốt sổ theo từng ví.
+- **Màn Tài sản và nhiều ví:** loại ví gồm tiền mặt, ngân hàng, ví điện tử, thẻ tín dụng, sổ tiết kiệm. Chạm một ô trong thẻ Tài sản ròng để xem:
+  - thanh cơ cấu Dùng được / Tiết kiệm / Nợ kèm tỉ lệ %;
+  - từng nhóm có tổng riêng, chia nhóm con (Ngân hàng, Ví điện tử…), mỗi ví có thanh so sánh;
+  - thẻ tín dụng hiện dư nợ và mức đã dùng so với hạn mức (vàng từ 30%, đỏ từ 70%).
+  Chi bằng thẻ thì chọn thẻ khi ghi; trả thẻ bằng Chuyển tiền từ ngân hàng sang thẻ. Chốt sổ nhập số thực tế theo từng ví (thẻ nhập dư nợ).
 - **Cài lên màn hình chính (PWA):** mở như app riêng, dùng được khi mất mạng, có lối tắt "Ghi giao dịch".
 - **Nhắc ghi chép mỗi tối** qua Google Calendar hoặc ứng dụng Lịch trên iPhone.
 - **Sao lưu và chuyển máy:** một file chứa toàn bộ sổ, gửi qua Zalo, AirDrop, email; khôi phục y nguyên trên máy khác.
@@ -18,7 +22,8 @@
 - Số 0 hiện là "0" thay vì "+0", "−0".
 - Rút gọn chữ trên toàn app: bỏ các dòng giải thích lặp lại điều đã rõ trên màn hình.
 - Trang Cài đặt chia nhóm: Sổ của bạn, Dùng hằng ngày, Sao lưu và chuyển máy, Excel.
-- Excel có thêm cột và sheet Ví; tên danh mục lạ được tạo thành danh mục mới.
+- Excel có thêm cột Ví và sheet Ví (loại, số dư, hạn mức); tên danh mục lạ được tạo thành danh mục mới.
+- Thẻ Tài sản ròng trên Tổng quan chia thành Dùng được · Tiết kiệm · Nợ.
 - Gợi ý "Ghi lại khoản gần đây" không lặp lại khoản cố định.
 
 **Sửa**

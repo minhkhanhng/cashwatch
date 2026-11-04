@@ -346,6 +346,27 @@ details.info p { margin: 6px 0 0; line-height: 1.6; }
 .cat-preview .avatar svg { width: 24px; height: 24px; }
 .set-group { display: flex; flex-direction: column; gap: 6px; }
 .w-chip { display: inline-flex; align-items: center; gap: 5px; }
+/* Màn Tài sản: thanh cơ cấu trong thẻ navy, màu nhóm: dùng được = xanh chanh, tiết kiệm = xanh lá, nợ = san hô */
+.mix { display: flex; height: 12px; border-radius: 999px; overflow: hidden; background: rgba(246, 247, 237, .14); gap: 2px; }
+.mix i { display: block; height: 100%; min-width: 0; }
+.mix-legend { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; font-size: 12.5px; color: var(--feature-muted); }
+.mix-legend > span { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.mix-legend b { font-family: var(--font-display); font-size: clamp(15px, 4.4vw, 18px); color: var(--feature-ink); white-space: nowrap; }
+.mix-legend small { font-size: 12px; color: var(--feature-muted); }
+.dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; vertical-align: 1px; }
+.g-spend { background: var(--lime); }
+.g-save { background: #74C365; }
+.g-debt { background: var(--feature-neg); }
+.w-name { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.w-name > span:first-child { font-weight: 500; overflow-wrap: anywhere; }
+.group-total { font-family: var(--font-display); font-weight: 700; font-size: 16px; }
+.mix-legend .lg { display: flex; align-items: center; white-space: nowrap; }
+.sub-head { display: flex; justify-content: space-between; gap: 12px; padding: 10px 16px 6px; border-top: 1px solid var(--line); background: var(--surface-2); font-size: 12px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
+.sub-head:first-child { border-top: 0; }
+.sub-head .num { text-transform: none; letter-spacing: 0; font-size: 13px; color: var(--ink); }
+.sub-head + .cat-row { border-top: 0; }
+.bar > i.pos { background: var(--chart-in); }
+.bar > i.warn { background: var(--warn); }
 .w-chip svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; flex: none; }
 .steps-list { margin: 0; padding-left: 22px; display: flex; flex-direction: column; gap: 8px; font-size: 15px; }
 a.btn { display: block; text-decoration: none; text-align: center; color: inherit; }
@@ -987,11 +1008,17 @@ function wealthNow() {
 }
 /* ---------- Ví: mỗi ví khác có số dư riêng; Ví chính = tổng tiền đang có trừ các ví khác ---------- */
 const MAIN = "main";
-const WALLET_ICONS = [["wallet", "Ví"], ["cash", "Tiền mặt"], ["bank", "Ngân hàng"], ["phone", "Ví điện tử"], ["card", "Thẻ"], ["coins", "Khác"]];
+// Loại ví và nhóm tài sản: spend = tiền dùng được, saving = tiết kiệm, credit = thẻ tín dụng (số dư âm là dư nợ)
+const WALLET_TYPES = [["cash", "Tiền mặt", "spend"], ["bank", "Ngân hàng", "spend"], ["phone", "Ví điện tử", "spend"], ["card", "Thẻ tín dụng", "credit"], ["coins", "Sổ tiết kiệm", "saving"], ["wallet", "Ví khác", "spend"]];
+const WALLET_ICONS = WALLET_TYPES.map(([ic, l]) => [ic, l]);
+const walletGroup = icon => (WALLET_TYPES.find(t => t[0] === icon) || [, , "spend"])[2];
+const walletTypeLabel = icon => (WALLET_TYPES.find(t => t[0] === icon) || [, "Ví"])[1];
+const GROUP_ORDER = { spend: 0, credit: 1, saving: 2 };
 const hasWallets = () => S.wallets && S.wallets.length > 0;
 const walletOf = id => S.wallets.find(w => w.id === id);
 const walletName = id => (walletOf(id) || { name: S.mainWallet || "Ví chính" }).name;
-const walletIcon = (icon, cls = "") => `<span class="avatar t-accent ${cls}" aria-hidden="true"><svg viewBox="0 0 24 24">${ICON[icon] || ICON.wallet}</svg></span>`;
+const GROUP_TINT = { spend: "blue", saving: "green", credit: "orange" };
+const walletIcon = (icon, cls = "", main = false) => `<span class="avatar t-${GROUP_TINT[main ? "spend" : walletGroup(icon)]} ${cls}" aria-hidden="true"><svg viewBox="0 0 24 24">${ICON[icon] || ICON.wallet}</svg></span>`;
 function walletBal(w) {
   let b = w.start || 0;
   for (const t of allTx()) if (t.w === w.id && (t.at || 0) >= (w.at || 0)) b += t.kind === "in" ? t.amt : -t.amt;
@@ -1004,9 +1031,21 @@ function walletsNow() {
   const main = { id: MAIN, name: S.mainWallet || "Ví chính", icon: "wallet", bal: total - others.reduce((a, w) => a + w.bal, 0) };
   return { total, list: [main, ...others] };
 }
+// Tài sản theo nhóm. Tài sản ròng luôn bằng wealthNow().net (tiền theo sổ + để dành − khoản vay)
+function assetsNow() {
+  const w = wealthNow(), { list } = walletsNow();
+  const g = { spend: [], saving: [], credit: [] };
+  for (const x of list) g[x.id === MAIN ? "spend" : walletGroup(x.icon)].push(x);
+  const sum = a => a.reduce((s, x) => s + x.bal, 0);
+  const spend = sum(g.spend), savingW = sum(g.saving), credit = sum(g.credit);
+  const creditDebt = g.credit.reduce((s, x) => s + Math.max(0, -x.bal), 0);
+  const saving = savingW + w.saved, liab = creditDebt + w.debt;
+  return { groups: g, spend, saving, savedPlan: w.saved, creditDebt, credit, loans: w.debt, liab, assets: w.net + liab, net: w.net };
+}
 function walletPicker(selected, act) {
   if (!hasWallets()) return "";
-  return `<div class="cat-scroll" role="radiogroup" aria-label="Ví">${walletsNow().list.map(w => `<button type="button" class="chip w-chip ${w.id === selected ? "on" : ""}" data-act="${act}" data-w="${w.id}"><svg viewBox="0 0 24 24" aria-hidden="true">${ICON[w.icon] || ICON.wallet}</svg>${esc(w.name)}</button>`).join("")}</div>`;
+  const list = walletsNow().list.slice().sort((a, b) => GROUP_ORDER[walletGroup(a.icon)] - GROUP_ORDER[walletGroup(b.icon)]);
+  return `<div class="cat-scroll" role="radiogroup" aria-label="Ví">${list.map(w => `<button type="button" class="chip w-chip ${w.id === selected ? "on" : ""}" data-act="${act}" data-w="${w.id}"><svg viewBox="0 0 24 24" aria-hidden="true">${ICON[w.icon] || ICON.wallet}</svg>${esc(w.name)}</button>`).join("")}</div>`;
 }
 function paceOf(m) {
   const s = safeToSpend(m);
@@ -1119,7 +1158,7 @@ function goalMini() {
 
 function renderHome() {
   const m = curMonth();
-  const w = wealthNow(), t = totals(m), { s, left, elapsed, used, status } = paceOf(m);
+  const w = wealthNow(), ast = assetsNow(), t = totals(m), { s, left, elapsed, used, status } = paceOf(m);
   const months = monthsBetween(addM(m, -5) > S.startMonth ? addM(m, -5) : S.startMonth, m);
   const data = months.map(x => { const tt = totals(x); return { m: x, inc: tt.inc, spend: tt.spend, save: tt.save }; });
   // Biểu đồ chỉ có ý nghĩa khi đã có từ 2 tháng dữ liệu để so sánh
@@ -1138,12 +1177,12 @@ function renderHome() {
   view().innerHTML = `
   <div class="app">
     <section class="hero worth">
-      <div class="eyebrow-row"><span class="eyebrow">Tài sản ròng</span><details class="info"><summary>Là gì?</summary><p>Tiền đang có cộng tiền để dành, trừ nợ.</p></details></div>
+      <div class="eyebrow-row"><span class="eyebrow">Tài sản ròng</span><details class="info"><summary>Là gì?</summary><p>Tiền dùng được cộng tiết kiệm, trừ nợ (thẻ tín dụng, khoản vay). Chạm từng ô để xem chi tiết từng ví.</p></details></div>
       <div class="hero-num ${w.net < 0 ? "neg" : ""}">${w.net < 0 ? "−" : ""}${nf.format(Math.round(Math.abs(w.net)))}<span class="cur">₫</span></div>
       <div class="tiles">
-        <button class="tile" data-act="tab" data-tab="wallets"><span class="tile-label">Đang có</span><span class="tile-v num">${short(w.cash)}</span></button>
-        <button class="tile" data-act="plan-seg" data-seg="goal"><span class="tile-label">Để dành</span><span class="tile-v num">${short(w.saved)}</span></button>
-        <button class="tile" data-act="plan-seg" data-seg="goal"><span class="tile-label">Nợ còn</span><span class="tile-v num ${w.debt > 0 ? "neg-t" : ""}">${w.debt > 0 ? "−" + short(w.debt) : "0"}</span></button>
+        <button class="tile" data-act="tab" data-tab="wallets"><span class="tile-label">Dùng được</span><span class="tile-v num">${short(ast.spend)}</span></button>
+        <button class="tile" data-act="tab" data-tab="wallets"><span class="tile-label">Tiết kiệm</span><span class="tile-v num">${short(ast.saving)}</span></button>
+        <button class="tile" data-act="tab" data-tab="wallets"><span class="tile-label">Nợ</span><span class="tile-v num ${ast.liab > 0 ? "neg-t" : ""}">${ast.liab > 0 ? "−" + short(ast.liab) : "0"}</span></button>
       </div>
     </section>
 
@@ -1374,23 +1413,63 @@ function renderFixed() {
   </div>`;
 }
 
+/* Màn Tài sản: tài sản ròng, cơ cấu tài sản, rồi từng nhóm Tiền dùng được / Tiết kiệm / Nợ */
 function renderWallets() {
-  const { total, list } = walletsNow();
-  const moves = (S.moves || []).slice().sort((a, b) => (b.at || 0) - (a.at || 0)).slice(0, 10);
+  const a = assetsNow(), moves = (S.moves || []).slice().sort((x, y) => (y.at || 0) - (x.at || 0)).slice(0, 8);
+  const pct = (v, t) => (t > 0 ? Math.max(0, Math.min(100, v / t * 100)) : 0);
+  const pctTxt = (v, t) => (t > 0 && v > 0 && v / t < .005 ? "<1%" : t > 0 ? Math.round(v / t * 100) + "%" : "0%");
+  const assetPos = Math.max(0, a.spend) + Math.max(0, a.saving);
+  const row = (w, opts = {}) => {
+    const credit = walletGroup(w.icon) === "credit" && w.id !== MAIN;
+    const debt = credit ? Math.max(0, -w.bal) : 0, lim = credit ? w.limit || 0 : 0;
+    const meta = opts.meta || (w.id === MAIN ? "Ví chính" : credit ? (lim ? `Hạn mức ${short(lim)} · đã dùng ${pctTxt(debt, lim)}` : "Thẻ tín dụng") : walletTypeLabel(w.icon));
+    const amt = credit ? (debt ? "−" + money(debt) : w.bal > 0 ? "+" + money(w.bal) : "0 ₫") : money(w.bal);
+    const barW = credit ? pct(debt, lim) : pct(w.bal, opts.max);
+    const barCls = credit ? (barW >= 70 ? "neg" : barW >= 30 ? "warn" : "") : opts.cls || "";
+    return `<button class="cat-row" data-act="${opts.act || "wallet-edit"}" ${opts.act ? `data-seg="goal"` : `data-w="${w.id}"`}>
+      <span class="row-title cat-title">${walletIcon(w.icon, "sm", w.id === MAIN)}<span class="w-name"><span>${esc(w.name)}</span><span class="row-meta">${meta}</span></span></span>
+      <span class="row-amt num ${credit && debt ? "neg-t" : w.bal < 0 ? "neg-t" : ""}">${amt}</span>
+      ${credit && !lim ? "" : `<span class="bar"><i class="${barCls}" style="width:${barW}%"></i></span>`}
+    </button>`;
+  };
+  const sortBal = l => l.slice().sort((x, y) => (x.id === MAIN ? -1 : y.id === MAIN ? 1 : y.bal - x.bal));
+  const spendMax = Math.max(1, ...a.groups.spend.map(w => w.bal));
+  // Nhiều loại ví thì chia nhóm con (Ngân hàng, Ví điện tử…) kèm tổng riêng, ví chính luôn đứng đầu
+  const spendBody = () => {
+    const main = a.groups.spend.filter(w => w.id === MAIN), rest = a.groups.spend.filter(w => w.id !== MAIN);
+    const types = ["bank", "phone", "cash", "wallet"].map(ic => [ic, rest.filter(w => w.icon === ic).sort((x, y) => y.bal - x.bal)]).filter(([, l]) => l.length);
+    const split = types.length > 1 || types.some(([, l]) => l.length > 1);
+    return main.map(w => row(w, { max: spendMax })).join("") + types.map(([ic, l]) =>
+      (split ? `<div class="sub-head"><span>${walletTypeLabel(ic)} · ${l.length}</span><span class="num">${short(l.reduce((t, w) => t + w.bal, 0))}</span></div>` : "")
+      + l.map(w => row(w, { max: spendMax, meta: split && a.spend > 0 ? `${pctTxt(w.bal, a.spend)} tiền dùng được` : null })).join("")).join("");
+  };
+  const savRows = a.groups.saving.slice();
+  if (a.savedPlan > 0 || S.goal) savRows.push({ id: "plan", name: S.goal ? "Sổ theo kế hoạch" : "Để dành đã ghi", icon: "coins", bal: a.savedPlan, plan: true });
+  const savMax = Math.max(1, ...savRows.map(w => w.bal));
+  const group = (title, total, body, totalTxt) => `<section class="section">
+    <div class="section-head"><h2>${title}</h2><span class="num group-total">${totalTxt ?? money(total)}</span></div>
+    <div class="card">${body}</div></section>`;
   view().innerHTML = `
   <div class="app">
-    <div class="page-head"><button class="icon-btn" data-act="tab" data-tab="home" aria-label="Quay lại Tổng quan"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></button><h2>Tiền đang có</h2></div>
-    <section class="hero">
-      <div class="eyebrow">Tổng các ví</div>
-      <div class="hero-num ${total < 0 ? "neg" : ""}">${total < 0 ? "−" : ""}${nf.format(Math.round(Math.abs(total)))}<span class="cur">₫</span></div>
+    <div class="page-head"><button class="icon-btn" data-act="tab" data-tab="home" aria-label="Quay lại Tổng quan"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></button><h2>Tài sản</h2></div>
+    <section class="hero worth">
+      <div class="eyebrow">Tài sản ròng</div>
+      <div class="hero-num ${a.net < 0 ? "neg" : ""}">${a.net < 0 ? "−" : ""}${nf.format(Math.round(Math.abs(a.net)))}<span class="cur">₫</span></div>
+      <div class="mix" role="img" aria-label="Cơ cấu tài sản: tiền dùng được ${pctTxt(Math.max(0, a.spend), assetPos)}, tiết kiệm ${pctTxt(Math.max(0, a.saving), assetPos)}">
+        <i class="g-spend" style="width:${pct(Math.max(0, a.spend), assetPos)}%"></i><i class="g-save" style="width:${pct(Math.max(0, a.saving), assetPos)}%"></i>
+      </div>
+      <div class="mix-legend">
+        <span><span class="lg"><i class="dot g-spend"></i>Dùng được</span><b class="num">${short(a.spend)}</b><small>${pctTxt(Math.max(0, a.spend), assetPos)}</small></span>
+        <span><span class="lg"><i class="dot g-save"></i>Tiết kiệm</span><b class="num">${short(a.saving)}</b><small>${pctTxt(Math.max(0, a.saving), assetPos)}</small></span>
+        <span><span class="lg"><i class="dot g-debt"></i>Nợ</span><b class="num">${a.liab ? "−" + short(a.liab) : "0"}</b><small>${a.liab ? pctTxt(a.liab, a.assets) + " tài sản" : ""}</small></span>
+      </div>
     </section>
-    <div class="card rows">${list.map(w => `<button class="row" data-act="wallet-edit" data-w="${w.id}">
-      ${walletIcon(w.icon)}
-      <span class="row-main"><span class="row-title">${esc(w.name)}</span><span class="row-meta">${w.id === MAIN ? (hasWallets() ? "Phần còn lại của tổng" : "Toàn bộ tiền đang có") : esc((WALLET_ICONS.find(x => x[0] === w.icon) || [, "Ví"])[1])}</span></span>
-      <span class="row-amt num ${w.bal < 0 ? "neg-t" : ""}">${money(w.bal)}</span>
-    </button>`).join("")}</div>
-    <div class="actions"><button class="btn" data-act="wallet-new">+ Thêm ví</button>${hasWallets() ? `<button class="btn primary" data-act="move-new">Chuyển tiền</button>` : ""}</div>
-    ${hasWallets() ? "" : `<p class="note">Tách tiền mặt, ngân hàng, Momo… để biết mỗi nơi còn bao nhiêu.</p>`}
+    ${group("Tiền dùng được", a.spend, spendBody())}
+    ${savRows.length ? group("Tiết kiệm", a.saving, savRows.map(w => w.plan ? row(w, { max: savMax, cls: "pos", act: "plan-seg" }) : row(w, { max: savMax, cls: "pos" })).join("")) : ""}
+    ${a.groups.credit.length || a.loans ? group("Nợ", a.liab, a.groups.credit.map(w => row(w)).join("")
+      + (a.loans ? `<button class="cat-row" data-act="plan-seg" data-seg="goal"><span class="row-title cat-title"><span class="avatar sm t-orange" aria-hidden="true"><svg viewBox="0 0 24 24">${ICON.bank}</svg></span><span class="w-name"><span>Khoản vay</span><span class="row-meta">Theo kế hoạch trả nợ</span></span></span><span class="row-amt num neg-t">−${money(a.loans)}</span></button>` : ""), a.liab ? "−" + money(a.liab) : "0 ₫") : ""}
+    <div class="actions"><button class="btn" data-act="wallet-new">+ Thêm ví, thẻ, sổ</button>${hasWallets() ? `<button class="btn primary" data-act="move-new">Chuyển tiền</button>` : ""}</div>
+    ${hasWallets() ? "" : `<p class="note">Thêm tiền mặt, ngân hàng, ví điện tử, thẻ tín dụng, sổ tiết kiệm để thấy mỗi nơi còn bao nhiêu.</p>`}
     ${moves.length ? `<section class="section"><h2>Chuyển tiền gần đây</h2><div class="card rows">${moves.map(mv => `<div class="row">
       <span class="row-main"><span class="row-title">${esc(walletName(mv.from === MAIN ? null : mv.from))} → ${esc(walletName(mv.to === MAIN ? null : mv.to))}</span><span class="row-meta">${dayLabel(mv.d)}</span></span>
       <span class="row-amt num">${short(mv.amt)}</span>
@@ -1403,18 +1482,39 @@ function openWalletSheet(id) {
   const isMain = id === MAIN, isNew = !id;
   const w = isMain ? { id: MAIN, name: S.mainWallet || "Ví chính", icon: "wallet" } : isNew ? { name: "", icon: "cash" } : walletOf(id);
   if (!w) return;
-  const now = walletsNow(), cur = isNew ? 0 : (now.list.find(x => x.id === w.id) || { bal: 0 }).bal, mainBal = now.list[0].bal;
-  openSheet(`${sheetHead(isNew ? "Thêm ví" : "Sửa ví")}
-    <div class="field"><label for="w-name">Tên ví</label><input id="w-name" value="${esc(w.name)}" placeholder="vd Tiền mặt, Momo, Techcombank" maxlength="30"></div>
+  const now = walletsNow(), cur = isNew ? 0 : (now.list.find(x => x.id === w.id) || { bal: 0 }).bal;
+  const credit = walletGroup(w.icon) === "credit";
+  const shown = isNew ? "" : nf.format(Math.round(credit ? Math.max(0, -cur) : cur));
+  openSheet(`${sheetHead(isNew ? "Thêm ví, thẻ hoặc sổ" : "Sửa " + esc(w.name))}
+    ${isMain ? "" : `<div class="field"><label>Loại</label><div class="chips" id="w-icons">${WALLET_TYPES.map(([ic, l]) => `<button type="button" class="chip w-chip ${w.icon === ic ? "on" : ""}" data-act="w-icon" data-icon="${ic}"><svg viewBox="0 0 24 24" aria-hidden="true">${ICON[ic]}</svg>${l}</button>`).join("")}</div></div>`}
+    <div class="field"><label for="w-name">Tên</label><input id="w-name" value="${esc(w.name)}" placeholder="vd Momo, Techcombank, Thẻ VIB" maxlength="30"></div>
     ${isMain ? `<p class="note">Tự tính bằng tổng tiền trừ các ví khác.</p>` : `
-    <div class="field"><label>Loại</label><div class="chips" id="w-icons">${WALLET_ICONS.map(([ic, l]) => `<button type="button" class="chip ${w.icon === ic ? "on" : ""}" data-act="w-icon" data-icon="${ic}">${l}</button>`).join("")}</div></div>
-    <div class="field"><label for="w-bal">${isNew ? "Số dư hiện tại" : "Số dư đúng lúc này"}</label><input id="w-bal" inputmode="decimal" data-money value="${isNew ? "" : nf.format(Math.round(cur))}" placeholder="vd 2tr"></div>
-    ${isNew ? `<div class="field"><label>Số tiền này</label><div class="seg" id="w-src"><button type="button" class="on" data-act="w-src" data-v="split">Đã có trong tổng</button><button type="button" data-act="w-src" data-v="new">Là tiền mới</button></div>
-      <span class="help" id="w-src-note">Tách ra từ ${esc(S.mainWallet || "Ví chính")} (đang có ${money(mainBal)}).</span></div>` : `<p class="note">Phần chênh lệch tính vào ${esc(S.mainWallet || "Ví chính")}.</p>`}`}
+    <div class="grid2">
+      <div class="field"><label for="w-bal" id="w-bal-label"></label><input id="w-bal" inputmode="decimal" data-money value="${shown}" placeholder="vd 2tr"></div>
+      <div class="field" id="w-limit-wrap"><label for="w-limit">Hạn mức</label><input id="w-limit" inputmode="decimal" data-money value="${w.limit ? nf.format(w.limit) : ""}" placeholder="vd 20tr"></div>
+    </div>
+    ${isNew ? `<div class="field" id="w-src-wrap"><label>Số tiền này</label><div class="seg" id="w-src"><button type="button" data-act="w-src" data-v="split">Đã có trong tổng</button><button type="button" data-act="w-src" data-v="new">Là tiền mới</button></div>
+      <span class="help" id="w-src-note"></span></div>` : ""}
+    <p class="note" id="w-note"></p>`}
     <div class="actions">
-      ${isNew || isMain ? "" : `<button class="btn danger" data-act="wallet-del">Xóa ví</button>`}
-      <button class="btn primary" data-act="wallet-save">${isNew ? "Thêm ví" : "Lưu"}</button>
-    </div>`, { wid: isNew ? null : w.id, icon: w.icon, src: "split", cur });
+      ${isNew || isMain ? "" : `<button class="btn danger" data-act="wallet-del">Xóa</button>`}
+      <button class="btn primary" data-act="wallet-save">${isNew ? "Thêm" : "Lưu"}</button>
+    </div>`, { wid: isNew ? null : w.id, icon: w.icon, src: null, cur, isNew, isMain }, walletForm);
+}
+// Cập nhật nhãn và gợi ý theo loại: thẻ tín dụng nhập dư nợ + hạn mức; sổ tiết kiệm mặc định là tiền mới
+function walletForm() {
+  const st = sheet && sheet.state; if (!st || st.isMain || !$("#w-bal-label")) return;
+  const g = walletGroup(st.icon), credit = g === "credit";
+  if (st.isNew && !st.userSrc) st.src = g === "spend" ? "split" : "new";
+  $("#w-bal-label").textContent = credit ? (st.isNew ? "Dư nợ hiện tại" : "Dư nợ lúc này") : (st.isNew ? "Số dư hiện tại" : "Số dư lúc này");
+  $("#w-limit-wrap").hidden = !credit;
+  if ($("#w-src-wrap")) {
+    $("#w-src-wrap").hidden = credit;
+    document.querySelectorAll("#w-src button").forEach(b => b.classList.toggle("on", b.dataset.v === st.src));
+    $("#w-src-note").textContent = st.src === "new" ? "Cộng thêm vào tài sản. Không tính là khoản thu." : `Tách ra từ ${S.mainWallet || "Ví chính"} (đang có ${money(walletsNow().list[0].bal)}).`;
+  }
+  $("#w-note").textContent = credit ? "Chi bằng thẻ thì chọn thẻ này khi ghi. Trả thẻ: Chuyển tiền từ ngân hàng sang thẻ." : st.isNew ? "" : `Phần chênh lệch tính vào ${S.mainWallet || "Ví chính"}.`;
+  $("#w-note").hidden = !$("#w-note").textContent;
 }
 function openMoveSheet() {
   const L = walletsNow().list;
@@ -1425,7 +1525,7 @@ function openMoveSheet() {
       <div class="field"><label for="mv-to">Đến</label><select id="mv-to">${opts(L[1] ? L[1].id : L[0].id)}</select></div>
     </div>
     <div class="field"><label for="mv-amt">Số tiền</label><input id="mv-amt" inputmode="decimal" data-money placeholder="vd 500k"></div>
-    <p class="note">Không tính là thu hay chi.</p>
+    <p class="note">Rút ATM, nạp ví, gửi tiết kiệm, trả thẻ tín dụng. Không tính là thu hay chi.</p>
     <button class="btn primary block" data-act="move-save">Chuyển</button>`, {});
 }
 function defaultCloseMonth() {
@@ -1487,12 +1587,13 @@ function closeFields() {
     <div class="field"><label for="close-cash">Tiền mặt, ví</label><input id="close-cash" class="close-in" data-w="cash" inputmode="decimal" data-money placeholder="vd 1tr2"></div>
     <div class="field"><label for="close-bank">Tài khoản ngân hàng</label><input id="close-bank" class="close-in" data-w="bank" inputmode="decimal" data-money placeholder="vd 7.800.000"></div>
   </div>`;
-  return `<div class="stack">${walletsNow().list.map(w => `<div class="field"><label for="close-w-${w.id}">${esc(w.name)}</label><input id="close-w-${w.id}" class="close-in" data-w="${w.id}" inputmode="decimal" data-money placeholder="Theo sổ ${nf.format(Math.round(w.bal))}"></div>`).join("")}
+  return `<div class="stack">${walletsNow().list.map(w => { const cr = w.id !== MAIN && walletGroup(w.icon) === "credit";
+    return `<div class="field"><label for="close-w-${w.id}">${esc(w.name)}${cr ? " · dư nợ" : ""}</label><input id="close-w-${w.id}" class="close-in" data-w="${w.id}" ${cr ? 'data-credit="1"' : ""} inputmode="decimal" data-money placeholder="Theo sổ ${nf.format(Math.round(cr ? Math.max(0, -w.bal) : w.bal))}"></div>`; }).join("")}
     <p class="note" style="margin:0">Để trống là giữ số theo sổ.</p></div>`;
 }
 function readClose() {
   const vals = {}; let any = false;
-  document.querySelectorAll(".close-in").forEach(i => { const v = parseMoney(i.value); if (v != null) any = true; vals[i.dataset.w] = v; });
+  document.querySelectorAll(".close-in").forEach(i => { let v = parseMoney(i.value); if (v != null) { any = true; if (i.dataset.credit) v = -Math.abs(v); } vals[i.dataset.w] = v; });
   if (hasWallets()) for (const w of walletsNow().list) if (vals[w.id] == null) vals[w.id] = w.bal;
   const real = Object.values(vals).reduce((a, v) => a + (v || 0), 0);
   return { vals, any, real };
@@ -2409,16 +2510,20 @@ function readWorkbook(XLSX, wb) {
   }
 
   // Sheet Ví (không bắt buộc): số dư hiện tại của từng ví
-  const walletBals = {};
+  const walletBals = {}, walletMeta = {}, sheetNames = [];
+  let mainName = null;
   for (const r of sheetRows(XLSX, wb, SHEETS.wallet) || []) {
     const name = String(col(r, "Tên ví", "Tên")).trim(), bal = toNum(col(r, "Số dư hiện tại", "Số dư"));
     if (!name) continue;
-    walletNames.add(name);
+    if (norm(col(r, "Loại")) === norm("Ví chính")) { mainName = name; continue; }
+    sheetNames.push(name);
     if (bal != null) walletBals[name] = bal;
+    const type = WALLET_TYPES.find(t => norm(t[1]) === norm(col(r, "Loại")));
+    walletMeta[name] = { icon: type ? type[0] : "wallet", limit: toNum(col(r, "Hạn mức")) || 0 };
   }
   const learned = {};
   for (const t of keep) { const n = norm(t.desc); if (n) learned[t.kind + ":" + n] = t.cat; }
-  return { tx: keep, future, recurring, recFromSheet, startMonth, openingBalance, budgets, closings, learned, newCats, walletNames: [...walletNames], walletBals, startMid };
+  return { tx: keep, future, recurring, recFromSheet, startMonth, openingBalance, budgets, closings, learned, newCats, walletNames: [...new Set([...sheetNames, ...walletNames])].filter(n => n !== mainName), walletBals, walletMeta, mainName, startMid };
 }
 
 async function handleFile(file) {
@@ -2458,14 +2563,15 @@ async function applyImport(res) {
   S = Object.assign(DEFAULTS(), { startMonth: res.startMonth, openingBalance: res.openingBalance, startMid: !!res.startMid, recurring: res.recurring, budgets: res.budgets, learned: res.learned, goal: keepGoal, importedAt: Date.now() });
   S.cats = { out: [...(keepCats?.out || []), ...res.newCats.out], in: [...(keepCats?.in || []), ...res.newCats.in] };
   S.hiddenCats = keepHidden || S.hiddenCats;
-  S.mainWallet = keepMain || S.mainWallet;
+  S.mainWallet = res.mainName || keepMain || S.mainWallet;
   // Ví ghi trong file: ví chính giữ nguyên, các ví khác tạo mới với số dư bằng tổng giao dịch của ví đó
   // Có số dư trong sheet Ví thì lấy làm mốc (sau mọi giao dịch nhập vào), không thì cộng dồn từ giao dịch
   const wid = {}, after = Date.now() + res.tx.length + 1;
   for (const name of res.walletNames) {
     if (norm(name) === norm(S.mainWallet)) continue;
     const known = res.walletBals && res.walletBals[name] != null;
-    const w = { id: "w_" + uid(), name, icon: "wallet", start: known ? res.walletBals[name] : 0, at: known ? after : 0 };
+    const meta = (res.walletMeta || {})[name] || {};
+    const w = { id: "w_" + uid(), name, icon: meta.icon || "wallet", start: known ? res.walletBals[name] : 0, at: known ? after : 0, ...(meta.limit ? { limit: meta.limit } : {}) };
     S.wallets.push(w); wid[name] = w.id;
   }
   M = {};
@@ -2514,9 +2620,9 @@ async function exportExcel() {
   for (const [cat, b] of Object.entries(S.budgets)) (Array.isArray(b) ? b : [{ from: S.startMonth, amt: b }]).forEach(s => budRows.push([catLabel("out", cat), s.from, s.amt]));
   XLSX.utils.book_append_sheet(wb, sheetOf(XLSX, budRows, [16, 10, 12]), SHEETS.budget);
   if (hasWallets()) {
-    const wRows = [["Tên ví", "Loại", "Số dư hiện tại"]];
-    walletsNow().list.forEach(w => wRows.push([w.name, w.id === MAIN ? "Ví chính" : (WALLET_ICONS.find(x => x[0] === w.icon) || [, "Ví"])[1], Math.round(w.bal)]));
-    XLSX.utils.book_append_sheet(wb, sheetOf(XLSX, wRows, [20, 14, 16]), SHEETS.wallet);
+    const wRows = [["Tên ví", "Loại", "Số dư hiện tại", "Hạn mức"]];
+    walletsNow().list.forEach(w => wRows.push([w.name, w.id === MAIN ? "Ví chính" : walletTypeLabel(w.icon), Math.round(w.bal), w.limit || ""]));
+    XLSX.utils.book_append_sheet(wb, sheetOf(XLSX, wRows, [20, 14, 16, 12]), SHEETS.wallet);
   }
   const closeRows = [CLOSE_HEAD];
   Object.entries(S.closings).sort((a, b) => a[0].localeCompare(b[0])).forEach(([m, c]) => closeRows.push([m, c.cash, c.bank]));
@@ -2802,29 +2908,30 @@ document.addEventListener("click", async e => {
     case "tx-wallet": st.w = el.dataset.w; el.parentElement.querySelectorAll(".chip").forEach(c => c.classList.toggle("on", c === el)); break;
     case "wallet-new": openWalletSheet(null); break;
     case "wallet-edit": openWalletSheet(el.dataset.w); break;
-    case "w-icon": st.icon = el.dataset.icon; el.parentElement.querySelectorAll(".chip").forEach(c => c.classList.toggle("on", c === el)); break;
-    case "w-src": {
-      st.src = el.dataset.v; el.parentElement.querySelectorAll("button").forEach(b => b.classList.toggle("on", b === el));
-      $("#w-src-note").textContent = st.src === "new" ? "Cộng thêm vào tổng tiền đang có. Không tính là khoản thu." : `Tách ra từ ${S.mainWallet || "Ví chính"} (đang có ${money(walletsNow().list[0].bal)}).`;
-      break;
-    }
+    case "w-icon": st.icon = el.dataset.icon; el.parentElement.querySelectorAll(".chip").forEach(c => c.classList.toggle("on", c === el)); walletForm(); break;
+    case "w-src": st.src = el.dataset.v; st.userSrc = true; walletForm(); break;
     case "wallet-save": {
       const name = $("#w-name").value.trim();
-      if (!name) { toast("Đặt tên cho ví"); $("#w-name").focus(); break; }
+      if (!name) { toast("Đặt tên"); $("#w-name").focus(); break; }
       if (st.wid === MAIN) { S.mainWallet = name; Store.touch("settings"); closeSheet(); render(); toast("Đã lưu"); break; }
-      const bal = $("#w-bal").value.trim() ? parseMoney($("#w-bal").value) : 0;
-      if (bal == null) { toast("Chưa hiểu số dư, ví dụ 2tr"); break; }
+      const credit = walletGroup(st.icon) === "credit";
+      const raw = $("#w-bal").value.trim() ? parseMoney($("#w-bal").value) : 0;
+      if (raw == null) { toast("Chưa hiểu số tiền, ví dụ 2tr"); break; }
+      const bal = credit ? -Math.abs(raw) : raw; // thẻ tín dụng: dư nợ lưu thành số âm
+      const limit = credit ? parseMoney($("#w-limit").value) || 0 : 0;
       const now = Date.now();
       if (!st.wid) {
-        const w = { id: "w_" + uid(), name, icon: st.icon || "wallet", start: st.src === "new" ? 0 : bal, at: now };
+        const fresh = credit || st.src === "new";
+        const w = { id: "w_" + uid(), name, icon: st.icon || "wallet", start: fresh ? 0 : bal, at: now, ...(limit ? { limit } : {}) };
         S.wallets.push(w);
-        if (st.src === "new" && bal) addTx({ m: curMonth(), d: today(), kind: bal > 0 ? "in" : "out", amt: Math.abs(bal), unit: Math.abs(bal), qty: 1, desc: "Số dư ban đầu " + name, cat: "Other", n: 1, adj: true, w: w.id, at: now });
-        toast(`Đã thêm ví ${name}`);
+        if (fresh && bal) addTx({ m: curMonth(), d: today(), kind: bal > 0 ? "in" : "out", amt: Math.abs(bal), unit: Math.abs(bal), qty: 1, desc: (credit ? "Dư nợ ban đầu " : "Số dư ban đầu ") + name, cat: "Other", n: 1, adj: true, w: w.id, at: now });
+        toast(`Đã thêm ${name}`);
       } else {
         const w = walletOf(st.wid); if (!w) break;
         w.name = name; w.icon = st.icon || w.icon;
+        if (credit) w.limit = limit; else delete w.limit;
         if (Math.round(bal) !== Math.round(st.cur)) { w.start = bal; w.at = now; }
-        toast("Đã lưu ví");
+        toast("Đã lưu");
       }
       Store.touch("settings"); closeSheet(); render(); break;
     }
