@@ -31,6 +31,8 @@
 - Thiết lập: nếu tiền đang có ít hơn số tính ra, phần chênh lệch thành dòng "Đã chi trước khi ghi sổ" thay vì số dư đầu tháng âm.
 - Xuất rồi nhập lại Excel giữ đúng "Còn tiêu được" của tháng bắt đầu giữa chừng.
 - Ô khoản cố định lúc thiết lập hiện số đầy đủ khi gõ tắt.
+- Popup dài (Danh mục, Cài đặt, Ghi nhanh, Kế hoạch…) cuộn được tới cuối; trước đây danh sách bên trong bị ép ngắn và cắt mất phần dưới. Trang phía sau không cuộn theo khi đang mở popup.
+- Lối tắt "Xem từng ví" ngay trên thẻ Tài sản ròng; trong Cài đặt đổi tên thành "Tài sản và ví".
 - Thử với 5 kiểu người dùng (sinh viên, dân văn phòng nhiều ví, nội trợ, freelancer, người lớn tuổi) và sửa:
   - "mẹ cho 500k", "lì xì", "hoàn tiền" tự nhận là khoản thu (danh mục mới Được cho, tặng và Hoàn tiền); "dự án", "thù lao" nhận là Kinh doanh;
   - danh mục mới Điện thoại (nạp thẻ, 4G, wifi), không còn bị xếp nhầm vào Nhà ở;

@@ -134,6 +134,8 @@ h2 { font-size: 18px; }
 .hero.worth { background: var(--feature-bg); color: var(--feature-ink); border: 0; }
 .worth .eyebrow, .worth .hero-num .cur, .worth .tile-label, .worth details.info p { color: var(--feature-muted); }
 .worth details.info summary { color: var(--lime); }
+.hero-link { display: inline-flex; align-items: center; gap: 2px; min-height: 36px; padding: 6px 10px 6px 14px; margin: -6px -8px -6px 0; border: 1px solid rgba(219, 230, 76, .45); border-radius: 999px; background: rgba(219, 230, 76, .12); color: var(--lime); font-weight: 600; font-size: 13.5px; }
+.hero-link svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .worth details.info summary::before { background: rgba(246, 247, 237, .14); color: var(--lime); }
 .worth .hero-num.neg, .worth .neg-t { color: var(--feature-neg); }
 .hero-num { font-family: var(--font-display); font-weight: 700; font-size: clamp(38px, 11vw, 52px); line-height: 1; letter-spacing: -.03em; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
@@ -421,6 +423,11 @@ legend { font-weight: 600; font-size: 14px; padding: 0 6px; }
 .backdrop { position: fixed; inset: 0; z-index: 20; background: rgba(0, 20, 40, .45); display: flex; align-items: flex-end; justify-content: center; }
 .sheet { background: var(--sheet); width: 100%; max-width: 560px; max-height: calc(100% - 24px - env(safe-area-inset-top, 0px)); overflow-y: auto; border-radius: 28px 28px 0 0; padding-top: 22px; position: relative; padding-left: max(18px, env(safe-area-inset-left, 0px)); padding-right: max(18px, env(safe-area-inset-right, 0px)); padding-bottom: calc(18px + env(safe-area-inset-bottom, 0px)); display: flex; flex-direction: column; gap: 14px; animation: rise .22s ease-out; }
 @keyframes rise { from { transform: translateY(24px); } }
+/* Nội dung popup giữ nguyên chiều cao để cả popup cuộn; không để thẻ bên trong bị ép ngắn và cắt mất phần dưới */
+.sheet > * { flex-shrink: 0; }
+.sheet { overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
+/* Khóa cuộn trang phía sau khi đang mở popup */
+body:has(#sheet-root .backdrop) { overflow: hidden; }
 .sheet::before { content: ""; position: absolute; top: 8px; left: 50%; width: 40px; height: 4px; margin-left: -20px; border-radius: 4px; background: var(--line-strong); }
 .sheet-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
 .sheet-head h2 { font-size: 20px; }
@@ -1192,7 +1199,7 @@ function renderHome() {
   view().innerHTML = `
   <div class="app">
     <section class="hero worth">
-      <div class="eyebrow-row"><span class="eyebrow">Tài sản ròng</span><details class="info"><summary>Là gì?</summary><p>Tiền dùng được cộng tiết kiệm, trừ nợ (thẻ tín dụng, khoản vay). Chạm từng ô để xem chi tiết từng ví.</p></details></div>
+      <div class="eyebrow-row"><span class="eyebrow">Tài sản ròng</span><button class="hero-link" data-act="tab" data-tab="wallets">Xem từng ví<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button></div>
       <div class="hero-num ${w.net < 0 ? "neg" : ""}">${w.net < 0 ? "−" : ""}${nf.format(Math.round(Math.abs(w.net)))}<span class="cur">₫</span></div>
       <div class="tiles">
         <button class="tile" data-act="tab" data-tab="wallets"><span class="tile-label">Dùng được</span><span class="tile-v num">${short(ast.spend)}</span></button>
@@ -1471,7 +1478,7 @@ function renderWallets() {
   <div class="app">
     <div class="page-head"><button class="icon-btn" data-act="tab" data-tab="home" aria-label="Quay lại Tổng quan"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></button><h2>Tài sản</h2></div>
     <section class="hero worth">
-      <div class="eyebrow">Tài sản ròng</div>
+      <div class="eyebrow-row"><span class="eyebrow">Tài sản ròng</span><details class="info"><summary>Là gì?</summary><p>Tiền dùng được cộng tiết kiệm, trừ nợ (thẻ tín dụng, khoản vay).</p></details></div>
       <div class="hero-num ${a.net < 0 ? "neg" : ""}">${a.net < 0 ? "−" : ""}${nf.format(Math.round(Math.abs(a.net)))}<span class="cur">₫</span></div>
       <div class="mix" role="img" aria-label="Cơ cấu tài sản: tiền dùng được ${pctTxt(Math.max(0, a.spend), assetPos)}, tiết kiệm ${pctTxt(Math.max(0, a.saving), assetPos)}">
         <i class="g-spend" style="width:${pct(Math.max(0, a.spend), assetPos)}%"></i><i class="g-save" style="width:${pct(Math.max(0, a.saving), assetPos)}%"></i>
@@ -2100,7 +2107,7 @@ function openSettings() {
       <div class="row"><span class="row-main"><span class="row-title">Bắt đầu từ</span><span class="row-meta">${mLabel(S.startMonth)} · số dư đầu ${money(S.openingBalance)}</span></span><button class="btn" data-act="edit-start">Sửa</button></div>
       <div class="row"><span class="row-main"><span class="row-title">Giao dịch</span><span class="row-meta">${allTx().length} khoản${months.length ? ` · ${mShort(months[0])} → ${mShort(months[months.length - 1])}` : ""}</span></span></div>
       ${link("open-cats", "Danh mục", nCustom ? `${nCustom} tự tạo` : "")}
-      ${link("open-wallets", "Ví", hasWallets() ? `${S.wallets.length + 1} ví` : "")}
+      ${link("open-wallets", "Tài sản và ví", hasWallets() ? `${S.wallets.length + 1} ví` : "")}
     </div></div>
     <div class="set-group"><span class="eyebrow">Dùng hằng ngày</span><div class="card rows">
       ${standalone() ? `<div class="row"><span class="row-main"><span class="row-title">Đã cài lên màn hình chính</span></span></div>` : link("install", "Cài lên màn hình chính", "Dùng được khi mất mạng")}
