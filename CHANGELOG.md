@@ -31,6 +31,16 @@
 - Thiết lập: nếu tiền đang có ít hơn số tính ra, phần chênh lệch thành dòng "Đã chi trước khi ghi sổ" thay vì số dư đầu tháng âm.
 - Xuất rồi nhập lại Excel giữ đúng "Còn tiêu được" của tháng bắt đầu giữa chừng.
 - Ô khoản cố định lúc thiết lập hiện số đầy đủ khi gõ tắt.
+- Thử với 5 kiểu người dùng (sinh viên, dân văn phòng nhiều ví, nội trợ, freelancer, người lớn tuổi) và sửa:
+  - "mẹ cho 500k", "lì xì", "hoàn tiền" tự nhận là khoản thu (danh mục mới Được cho, tặng và Hoàn tiền); "dự án", "thù lao" nhận là Kinh doanh;
+  - danh mục mới Điện thoại (nạp thẻ, 4G, wifi), không còn bị xếp nhầm vào Nhà ở;
+  - khoản cố định và giao dịch thêm tay tự đoán danh mục từ tên nếu chưa chọn;
+  - thiết lập bắt buộc nhập số tiền đang có;
+  - chuyển tiền vượt số dư ví sẽ hỏi lại; xóa ví nói rõ số dư gộp về ví chính;
+  - xem giao dịch của riêng một ví (Sửa ví → Xem giao dịch), có thanh lọc và nút Bỏ lọc;
+  - chip chọn cao 40px, ô tích 44px, bảng trượt có tên cho trình đọc màn hình;
+  - chữ phóng to/màn rất hẹp: ô tài sản xếp dọc, nhãn trạng thái tự xuống dòng;
+  - khoản chờ xác nhận gọn hơn ở màn hẹp, ô tìm kiếm không bị cắt chữ, ẩn hàng chọn tháng khi mới có một tháng.
 - Dòng điều chỉnh số dư không còn bị tính vào chi tiêu theo danh mục.
 - Thanh tab: nút + nằm gọn trong thanh và cùng đường tâm với các nút khác, các cột cách đều, nhãn không dính nhau ở màn hẹp.
 - Màn hẹp (320px): số tiền không còn bị bẻ giữa chừng, tiêu đề dài xuống tối đa 2 dòng thay vì bị cắt.
