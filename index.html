@@ -867,7 +867,7 @@ const APPV = "0.3.0";
 const LS_KEY = "cashwatch-v1";
 /* Đồng bộ qua Supabase (không bắt buộc). Hai giá trị dưới đây là khóa CÔNG KHAI của project, được thiết kế để nằm trong mã web;
    quyền truy cập do Row Level Security quyết định: mỗi người chỉ đọc/ghi được đúng một dòng sổ của mình. Để trống = tắt đồng bộ. */
-const SUPABASE = { url: "", anonKey: "" };
+const SUPABASE = { url: "https://skrekbxzrmbezegvkgki.supabase.co", anonKey: "sb_publishable_DQx3EondZomrjScKoK5yNw_vXjFBxV5" };
 const SYNC_KEY = "cashwatch-sync";
 const Store = {
   mode: "loading", coll: null, dirty: new Set(), pending: new Set(), timer: null, flushing: false, known: new Set(),
