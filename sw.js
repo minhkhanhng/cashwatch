@@ -21,7 +21,7 @@ self.addEventListener("fetch", e => {
     return;
   }
   // Biểu tượng, thư viện Excel, phông chữ: dùng bản đã lưu và cập nhật ngầm
-  const ok = url.origin === self.location.origin || url.hostname === "cdnjs.cloudflare.com" || url.hostname === "fonts.googleapis.com" || url.hostname === "fonts.gstatic.com";
+  const ok = url.origin === self.location.origin || url.hostname === "cdnjs.cloudflare.com" || url.hostname === "cdn.jsdelivr.net" || url.hostname === "fonts.googleapis.com" || url.hostname === "fonts.gstatic.com";
   if (!ok) return;
   e.respondWith(caches.open(VERSION).then(async c => {
     const hit = await c.match(req);

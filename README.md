@@ -20,7 +20,8 @@ Sổ thu chi cá nhân chạy hoàn toàn trên trình duyệt. Toàn bộ app n
 
 ## Dữ liệu
 
-- Dữ liệu chỉ lưu trong `localStorage` của trình duyệt bạn đang dùng, không gửi lên server nào.
+- Mặc định dữ liệu chỉ lưu trong `localStorage` của trình duyệt bạn đang dùng, không gửi lên server nào.
+- **Đồng bộ (không bắt buộc):** khi điền thông tin Supabase, người dùng đăng nhập bằng mã gửi qua email và sổ được lưu thêm lên tài khoản để mở trên máy khác. Cách bật: xem `docs/dong-bo-supabase.md` và `supabase/schema.sql`.
 - File Excel được đọc và tạo ngay trên máy bằng [SheetJS](https://sheetjs.com).
 - Xóa dữ liệu trình duyệt là mất sổ, nên hãy **tạo file sao lưu** định kỳ (biểu tượng bánh răng → Tạo file sao lưu). File này cũng dùng để chuyển sổ sang máy khác.
 - `sw.js` chỉ lưu giao diện app để mở được khi mất mạng, không đụng tới dữ liệu sổ.

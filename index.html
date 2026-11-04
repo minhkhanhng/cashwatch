@@ -457,6 +457,8 @@ body:has(#sheet-root .backdrop) { overflow: hidden; }
 .toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(86px + env(safe-area-inset-bottom, 0px)); z-index: 30; background: var(--toast-bg); color: var(--toast-ink); border-radius: 999px; padding: 8px 8px 8px 18px; min-height: 48px; display: flex; gap: 12px; align-items: center; font-size: 14px; box-shadow: var(--shadow); width: max-content; max-width: min(480px, calc(100% - 32px)); animation: toast-in .18s ease-out; }
 @keyframes toast-in { from { opacity: 0; transform: translate(-50%, 8px); } }
 .toast span { flex: 1; min-width: 0; }
+/* Thông báo không có nút: lề hai bên bằng nhau, chữ nằm giữa */
+.toast.plain { padding: 8px 22px; justify-content: center; text-align: center; }
 .toast button { background: none; border: 0; color: var(--toast-act); font-weight: 700; padding: 8px 12px; border-radius: 999px; white-space: nowrap; flex: none; }
 .loading { padding: 60px 0; text-align: center; color: var(--muted); }
 
@@ -859,6 +861,10 @@ const newLoan = g => ({ id: uid(), name: "Khoản vay", total: 0, borrowAt: g.st
 /* ---------- Storage: per-person private docs in the artifact db, browser storage as fallback ---------- */
 const APPV = "0.3.0";
 const LS_KEY = "cashwatch-v1";
+/* Đồng bộ qua Supabase (không bắt buộc). Hai giá trị dưới đây là khóa CÔNG KHAI của project, được thiết kế để nằm trong mã web;
+   quyền truy cập do Row Level Security quyết định: mỗi người chỉ đọc/ghi được đúng một dòng sổ của mình. Để trống = tắt đồng bộ. */
+const SUPABASE = { url: "", anonKey: "" };
+const SYNC_KEY = "cashwatch-sync";
 const Store = {
   mode: "loading", coll: null, dirty: new Set(), pending: new Set(), timer: null, flushing: false, known: new Set(),
   async init() {
@@ -909,7 +915,8 @@ const Store = {
     if (this.mode === "local") {
       this.dirty.clear();
       try { localStorage.setItem(LS_KEY, JSON.stringify({ settings: S, months: M })); }
-      catch (e) { toast("Trình duyệt không cho lưu. Hãy xuất Excel để giữ dữ liệu."); }
+      catch (e) { toast("Trình duyệt không cho lưu. Hãy sao lưu ra file để giữ dữ liệu."); }
+      Sync.schedule();
       return;
     }
     if (this.flushing || !this.coll) return;
@@ -951,6 +958,165 @@ const Store = {
     await this.flush();
   },
 };
+
+/* ---------- Đồng bộ tài khoản: lưu trên máy trước, đẩy lên Supabase sau; mở app hoặc quay lại app thì tải bản mới ---------- */
+const Sync = {
+  client: null, user: null, rev: 0, at: 0, dirty: false, busy: false, timer: null, state: "off", error: "",
+  ready() { return !!(SUPABASE.url && SUPABASE.anonKey) && Store.mode === "local"; },
+  meta() { try { return JSON.parse(localStorage.getItem(SYNC_KEY)) || {}; } catch (e) { return {}; } },
+  saveMeta() { try { localStorage.setItem(SYNC_KEY, JSON.stringify({ uid: this.user && this.user.id, rev: this.rev, at: this.at, dirty: this.dirty })); } catch (e) {} },
+  async lib() {
+    if (this.client) return this.client;
+    if (!window.supabase) await new Promise((res, rej) => {
+      const sc = document.createElement("script");
+      sc.src = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js";
+      sc.onload = res; sc.onerror = () => rej(new Error("load")); document.head.appendChild(sc);
+    });
+    this.client = window.supabase.createClient(SUPABASE.url, SUPABASE.anonKey, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } });
+    return this.client;
+  },
+  async init() {
+    if (!this.ready()) return;
+    try {
+      const c = await this.lib();
+      const { data } = await c.auth.getSession();
+      this.user = data && data.session ? data.session.user : null;
+      const m = this.meta();
+      if (this.user && m.uid === this.user.id) { this.rev = m.rev || 0; this.at = m.at || 0; this.dirty = !!m.dirty; }
+      c.auth.onAuthStateChange((ev, session) => { this.user = session ? session.user : null; if (ev === "SIGNED_OUT") this.setState("off"); });
+      if (this.user) { if (m.uid === this.user.id) await this.pull(); else await this.firstLink(await this.fetchRow()); }
+      document.addEventListener("visibilitychange", () => { if (!document.hidden && this.user) this.pull(); });
+      window.addEventListener("online", () => { if (this.user) (this.dirty ? this.push() : this.pull()); });
+    } catch (e) { this.setState("error", "Không kết nối được máy chủ đồng bộ"); }
+    render();
+  },
+  setState(st, err = "") { this.state = st; this.error = err; const l = $("#store-label"); if (l && Store.mode === "local") l.textContent = storeLabel(); },
+  schedule() {
+    if (!this.user || this.applying) return;
+    this.dirty = true; this.saveMeta();
+    clearTimeout(this.timer);
+    this.timer = setTimeout(() => this.push(), 1500);
+  },
+  body() { return { app: "CashWatch", format: 1, version: APPV, settings: S, months: M }; },
+  async fetchRow() {
+    const { data, error } = await this.client.from("cashwatch_books").select("data, rev, updated_at").eq("user_id", this.user.id).maybeSingle();
+    if (error) throw error;
+    return data;
+  },
+  // Thay sổ trên máy bằng sổ từ tài khoản, không kích hoạt đẩy ngược lên
+  apply(data, rev) {
+    this.applying = true;
+    S = Object.assign(DEFAULTS(), data.settings || {}); normGoal(S.goal);
+    M = {}; for (const [m, l] of Object.entries(data.months || {})) if (Array.isArray(l) && l.length) M[m] = l;
+    hasData = !!data.settings;
+    try { localStorage.setItem(LS_KEY, JSON.stringify({ settings: S, months: M })); } catch (e) {}
+    this.applying = false;
+    this.rev = rev; this.at = Date.now(); this.dirty = false; this.saveMeta();
+  },
+  async pull() {
+    if (!this.user || this.busy) return;
+    this.busy = true; this.setState("syncing");
+    try {
+      const row = await this.fetchRow();
+      if (!row) { this.rev = 0; this.busy = false; if (hasData) await this.push(); else { this.saveMeta(); this.setState("ok"); } return; }
+      if (row.rev !== this.rev) {
+        if (this.dirty && hasData) { const merged = mergeBooks(row.data, this.body()); this.apply(merged, row.rev); this.dirty = true; this.busy = false; render(); await this.push(); return; }
+        this.apply(row.data, row.rev);
+        if (!sheet) render();
+      }
+      this.at = Date.now(); this.saveMeta(); this.setState("ok");
+    } catch (e) { this.setState("error", "Chưa đồng bộ được, sẽ thử lại"); }
+    this.busy = false;
+  },
+  async push(retry = true) {
+    if (!this.user || this.busy) return;
+    clearTimeout(this.timer);
+    this.busy = true; this.setState("syncing");
+    try {
+      const c = this.client, body = this.body();
+      let ok = false;
+      if (!this.rev) {
+        const { error } = await c.from("cashwatch_books").insert({ user_id: this.user.id, data: body, rev: 1 });
+        if (!error) { this.rev = 1; ok = true; }
+        else if (error.code !== "23505") throw error;
+      } else {
+        const { data, error } = await c.from("cashwatch_books").update({ data: body, rev: this.rev + 1, updated_at: new Date().toISOString() }).eq("user_id", this.user.id).eq("rev", this.rev).select("rev");
+        if (error) throw error;
+        if (data && data.length) { this.rev = data[0].rev; ok = true; }
+      }
+      if (!ok) {
+        // Máy khác vừa ghi: gộp hai bản rồi đẩy lại
+        const row = await this.fetchRow();
+        if (!row && retry) { this.rev = 0; this.busy = false; return this.push(false); } // sổ trên tài khoản đã bị xóa: tạo lại
+        if (row && retry) { const merged = mergeBooks(row.data, body); this.apply(merged, row.rev); this.dirty = true; this.busy = false; if (!sheet) render(); return this.push(false); }
+        throw new Error("conflict");
+      }
+      this.dirty = false; this.at = Date.now(); this.saveMeta(); this.setState("ok");
+    } catch (e) { this.setState("error", "Chưa đồng bộ được, sẽ thử lại khi có mạng"); }
+    this.busy = false;
+  },
+  async sendCode(email) {
+    const c = await this.lib();
+    const { error } = await c.auth.signInWithOtp({ email, options: { shouldCreateUser: true, emailRedirectTo: location.origin + location.pathname } });
+    if (error) throw error;
+  },
+  async verify(email, token) {
+    // Lần đầu đăng ký, Supabase có thể gửi mã kiểu "signup" thay vì "email"
+    let { data, error } = await this.client.auth.verifyOtp({ email, token, type: "email" });
+    if (error) ({ data, error } = await this.client.auth.verifyOtp({ email, token, type: "signup" }));
+    if (error) throw error;
+    this.user = data.user;
+    const m = this.meta();
+    if (m.uid !== this.user.id) { this.rev = 0; this.dirty = false; }
+    this.saveMeta();
+    return this.fetchRow();
+  },
+  // Lần đầu nối tài khoản trên máy này: chỉ tự làm khi một bên trống, còn cả hai đều có sổ thì hỏi người dùng
+  async firstLink(row) {
+    this.saveMeta();
+    if (!row) { if (hasData) await this.push(); else this.setState("ok"); toast(hasData ? "Đã lưu sổ lên tài khoản" : "Đã đăng nhập"); return; }
+    if (!hasData) { this.apply(row.data, row.rev); this.setState("ok"); ui.tab = "home"; closeSheet(); render(); toast(`Đã tải sổ từ tài khoản · ${allTx().length} giao dịch`); return; }
+    const n = Object.values(row.data.months || {}).reduce((t, l) => t + (Array.isArray(l) ? l.length : 0), 0);
+    openSheet(`${sheetHead("Chọn sổ để dùng")}
+      <p class="muted" style="margin:0;font-size:14px">Máy này và tài khoản ${esc(this.user.email || "")} đều đã có sổ.</p>
+      <div class="card rows">
+        <button class="row" data-act="sync-use-remote"><span class="row-main"><span class="row-title">Dùng sổ trên tài khoản</span><span class="row-meta">${n} giao dịch · thay sổ trên máy này</span></span><span class="chev" aria-hidden="true">›</span></button>
+        <button class="row" data-act="sync-merge"><span class="row-main"><span class="row-title">Gộp hai sổ</span><span class="row-meta">Giữ giao dịch của cả hai bên (${allTx().length} trên máy này)</span></span><span class="chev" aria-hidden="true">›</span></button>
+      </div>`, { row });
+  },
+  async signOut() {
+    try { await this.client.auth.signOut(); } catch (e) {}
+    this.user = null; this.rev = 0; this.dirty = false;
+    try { localStorage.removeItem(SYNC_KEY); } catch (e) {}
+    this.setState("off");
+  },
+  async removeRemote() {
+    if (!this.user) return;
+    try { await this.client.from("cashwatch_books").delete().eq("user_id", this.user.id); } catch (e) {}
+    this.rev = 0; this.saveMeta();
+  },
+};
+const storeLabel = () => Store.mode === "cloud" ? "Sổ riêng" : !Sync.user ? "Trên máy này" : Sync.state === "syncing" ? "Đang đồng bộ…" : Sync.state === "error" ? "Chưa đồng bộ" : "Đã đồng bộ";
+// Gộp hai sổ: giao dịch, khoản cố định, ví, danh mục, chuyển tiền, chốt sổ gộp theo id; phần còn lại lấy theo bản "mine"
+function mergeBooks(theirs, mine) {
+  const a = theirs || {}, b = mine || {};
+  const sa = a.settings || {}, sb = b.settings || {};
+  const byId = (x, y) => { const m = new Map(); for (const i of x || []) if (i && i.id) m.set(i.id, i); for (const i of y || []) if (i && i.id) m.set(i.id, i); return [...m.values()]; };
+  const settings = Object.assign({}, sa, sb);
+  settings.recurring = byId(sa.recurring, sb.recurring);
+  settings.wallets = byId(sa.wallets, sb.wallets);
+  settings.moves = byId(sa.moves, sb.moves);
+  settings.cats = { out: byId(sa.cats && sa.cats.out, sb.cats && sb.cats.out), in: byId(sa.cats && sa.cats.in, sb.cats && sb.cats.in) };
+  settings.closings = Object.assign({}, sa.closings, sb.closings);
+  settings.budgets = Object.assign({}, sa.budgets, sb.budgets);
+  settings.learned = Object.assign({}, sa.learned, sb.learned);
+  settings.skips = {}; for (const k of new Set([...Object.keys(sa.skips || {}), ...Object.keys(sb.skips || {})])) settings.skips[k] = [...new Set([...(sa.skips || {})[k] || [], ...(sb.skips || {})[k] || []])];
+  if (!sb.goal && sa.goal) settings.goal = sa.goal;
+  if (sa.startMonth && sb.startMonth && sa.startMonth < sb.startMonth) { settings.startMonth = sa.startMonth; settings.openingBalance = sa.openingBalance; settings.startMid = sa.startMid; }
+  const months = {};
+  for (const m of new Set([...Object.keys(a.months || {}), ...Object.keys(b.months || {})])) months[m] = byId((a.months || {})[m], (b.months || {})[m]);
+  return { settings, months };
+}
 
 /* ---------- Mutations ---------- */
 function addTx(t) {
@@ -1806,6 +1972,7 @@ function renderWelcome() {
       <li>${catAvatar("out", "Savings")}<span><b>Biết còn tiêu được bao nhiêu</b><span class="muted">Tự trừ khoản cố định, báo khi chi quá nhanh.</span></span></li>
     </ol>
     <button class="btn primary block" data-act="start-fresh">Bắt đầu trong 1 phút</button>
+    ${Sync.ready() ? `<button class="btn block" data-act="sync-login">Đã có tài khoản? Đăng nhập</button>` : ""}
     <details class="info"><summary>Đã dùng CashWatch trên máy khác?</summary>
       <p>Trên máy cũ: Cài đặt → Tạo file sao lưu. Gửi file sang đây rồi mở.</p>
       <div class="actions" style="margin-top:10px"><button class="btn" data-act="pick-json">Khôi phục từ file sao lưu</button></div>
@@ -1864,7 +2031,7 @@ function saveSetup(st) {
 const PLAN_TABS = ["fixed", "goal"];
 function render() {
   const ready = Store.mode !== "loading";
-  $("#store-label").textContent = !ready ? "Đang mở sổ…" : Store.mode === "cloud" ? "Sổ riêng" : "Trên máy này";
+  $("#store-label").textContent = !ready ? "Đang mở sổ…" : storeLabel();
   const showApp = ready && hasData;
   $("#tabs").hidden = !showApp;
   if (!ready) return;
@@ -2102,7 +2269,13 @@ function openSettings() {
   const months = Object.keys(M).filter(m => txs(m).length).sort();
   const nCustom = customCats("out").length + customCats("in").length;
   const link = (act, title, meta, extra = "") => `<button class="row" data-act="${act}" ${extra}><span class="row-main"><span class="row-title">${title}</span>${meta ? `<span class="row-meta">${meta}</span>` : ""}</span><span class="chev" aria-hidden="true">›</span></button>`;
+  const syncGroup = !Sync.ready() ? "" : `<div class="set-group"><span class="eyebrow">Tài khoản và đồng bộ</span><div class="card rows">
+      ${Sync.user ? `<div class="row"><span class="avatar t-blue" aria-hidden="true"><svg viewBox="0 0 24 24">${ICON.phone}</svg></span><span class="row-main"><span class="row-title">${esc(Sync.user.email || "Đã đăng nhập")}</span><span class="row-meta">${Sync.state === "error" ? esc(Sync.error) : Sync.at ? "Đồng bộ lúc " + new Date(Sync.at).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" }) : "Đang đồng bộ…"}</span></span></div>
+      <div class="row" style="gap:8px"><button class="btn" style="flex:1" data-act="sync-now">Đồng bộ ngay</button><button class="btn" style="flex:1" data-act="sync-logout">Đăng xuất</button></div>`
+      : link("sync-login", "Đăng nhập bằng email", "Lưu sổ vào tài khoản, mở trên máy nào cũng thấy")}
+    </div></div>`;
   openSheet(`${sheetHead("Cài đặt")}
+    ${syncGroup}
     <div class="set-group"><span class="eyebrow">Sổ của bạn</span><div class="card rows">
       <div class="row"><span class="row-main"><span class="row-title">Bắt đầu từ</span><span class="row-meta">${mLabel(S.startMonth)} · số dư đầu ${money(S.openingBalance)}</span></span><button class="btn" data-act="edit-start">Sửa</button></div>
       <div class="row"><span class="row-main"><span class="row-title">Giao dịch</span><span class="row-meta">${allTx().length} khoản${months.length ? ` · ${mShort(months[0])} → ${mShort(months[months.length - 1])}` : ""}</span></span></div>
@@ -2122,9 +2295,22 @@ function openSettings() {
       ${link("pick-file", "Nhập từ file Excel", "")}
       ${link("template", "Tải file Excel mẫu", "")}
     </div></div>
-    <p class="muted" style="margin:0;font-size:13px">${Store.mode === "cloud" ? "Sổ lưu riêng theo tài khoản Claude của bạn." : "Sổ chỉ lưu trên trình duyệt này. Hãy sao lưu định kỳ."}</p>
+    <p class="muted" style="margin:0;font-size:13px">${Store.mode === "cloud" ? "Sổ lưu riêng theo tài khoản Claude của bạn." : Sync.user ? "Sổ lưu trên máy này và tự đồng bộ lên tài khoản của bạn." : "Sổ chỉ lưu trên trình duyệt này. Hãy sao lưu định kỳ."}</p>
     <button class="btn danger block" data-act="wipe">Xóa toàn bộ dữ liệu</button>
     <p class="note" style="text-align:center">CashWatch v${APPV} · Phím N: ghi nhanh</p>`, {});
+}
+
+/* ---------- Đăng nhập bằng mã gửi qua email ---------- */
+function openLogin(email) {
+  const step2 = !!email;
+  openSheet(`${sheetHead("Đăng nhập bằng email")}
+    ${step2 ? `<p class="muted" style="margin:0;font-size:14px">Mã đã gửi tới <b>${esc(email)}</b>. Mở email và nhập mã ở đây. Không thấy thì xem thư mục Spam.</p>
+      <div class="field"><label for="lg-code">Mã đăng nhập</label><input id="lg-code" inputmode="numeric" autocomplete="one-time-code" maxlength="10" placeholder="6 chữ số" style="letter-spacing:.3em;font-size:22px;text-align:center"></div>
+      <button class="btn primary block" data-act="lg-verify">Đăng nhập</button>
+      <button class="btn ghost block" data-act="lg-back">Đổi email hoặc gửi lại mã</button>`
+    : `<p class="muted" style="margin:0;font-size:14px">Sổ được lưu vào tài khoản để mở trên điện thoại, máy tính đều thấy. Không cần mật khẩu.</p>
+      <div class="field"><label for="lg-email">Email</label><input id="lg-email" type="email" inputmode="email" autocomplete="email" placeholder="ban@gmail.com"></div>
+      <button class="btn primary block" data-act="lg-send">Gửi mã đăng nhập</button>`}`, { email });
 }
 
 /* ---------- Sao lưu và chuyển máy: một file .json chứa toàn bộ sổ, khôi phục y nguyên ---------- */
@@ -2717,7 +2903,7 @@ async function downloadTemplate() {
 let toastTimer = null;
 function toast(msg, actLabel, fn) {
   const root = $("#toast-root");
-  root.innerHTML = `<div class="toast" role="status"><span>${esc(msg)}</span>${actLabel ? `<button data-act="toast-act">${esc(actLabel)}</button>` : ""}</div>`;
+  root.innerHTML = `<div class="toast ${actLabel ? "" : "plain"}" role="status"><span>${esc(msg)}</span>${actLabel ? `<button data-act="toast-act">${esc(actLabel)}</button>` : ""}</div>`;
   root.onclick = e => { if (e.target.closest("[data-act=toast-act]") && fn) { fn(); root.innerHTML = ""; } };
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => { root.innerHTML = ""; }, actLabel ? 5000 : 3000);
@@ -2875,7 +3061,8 @@ document.addEventListener("click", async e => {
     case "export": exportExcel(); break;
     case "wipe": {
       el.dataset.orig = "Xóa toàn bộ dữ liệu";
-      if (!armDanger(el, "Bấm lần nữa: xóa vĩnh viễn")) break;
+      if (!armDanger(el, Sync.user ? "Bấm lần nữa: xóa cả trên tài khoản" : "Bấm lần nữa: xóa vĩnh viễn")) break;
+      if (Sync.user) await Sync.removeRemote();
       closeSheet(); await Store.wipe(); S = DEFAULTS(); M = {}; hasData = false; ui.tab = "home"; render(); toast("Đã xóa sổ"); break;
     }
     case "template": downloadTemplate(); break;
@@ -3022,6 +3209,32 @@ document.addEventListener("click", async e => {
     case "restore-go": { el.disabled = true; el.textContent = "Đang khôi phục…"; await applyBackup(st.backup); break; }
     case "wallet-tx": closeSheet(); ui.lgWallet = el.dataset.w; ui.lgKind = "all"; ui.tab = "month"; ui.viewMonth = curMonth(); render(); window.scrollTo(0, 0); break;
     case "lg-wallet-clear": ui.lgWallet = null; render(); break;
+    case "sync-login": openLogin(null); break;
+    case "lg-back": openLogin(null); if (st && st.email) $("#lg-email").value = st.email; break;
+    case "lg-send": {
+      const email = $("#lg-email").value.trim();
+      if (!/^\S+@\S+\.\S+$/.test(email)) { toast("Nhập đúng địa chỉ email"); $("#lg-email").focus(); break; }
+      el.disabled = true; el.textContent = "Đang gửi…";
+      try { await Sync.sendCode(email); openLogin(email); $("#lg-code").focus(); }
+      catch (e) { el.disabled = false; el.textContent = "Gửi mã đăng nhập"; toast(e && e.status === 429 ? "Gửi quá nhiều lần, thử lại sau ít phút" : e && e.message === "load" ? "Không kết nối được, kiểm tra mạng" : "Chưa gửi được mã, thử lại"); }
+      break;
+    }
+    case "lg-verify": {
+      const code = $("#lg-code").value.replace(/\D/g, "");
+      if (code.length < 6) { toast("Nhập đủ mã trong email"); $("#lg-code").focus(); break; }
+      el.disabled = true; el.textContent = "Đang đăng nhập…";
+      try { const row = await Sync.verify(st.email, code); closeSheet(); await Sync.firstLink(row); render(); }
+      catch (e) { el.disabled = false; el.textContent = "Đăng nhập"; toast("Mã chưa đúng hoặc đã hết hạn"); }
+      break;
+    }
+    case "sync-use-remote": { const row = st.row; Sync.apply(row.data, row.rev); Sync.setState("ok"); closeSheet(); ui.tab = "home"; render(); toast(`Đã dùng sổ trên tài khoản · ${allTx().length} giao dịch`); break; }
+    case "sync-merge": { const row = st.row; Sync.apply(mergeBooks(row.data, Sync.body()), row.rev); Sync.dirty = true; closeSheet(); render(); await Sync.push(); toast(`Đã gộp hai sổ · ${allTx().length} giao dịch`); break; }
+    case "sync-now": closeSheet(); await (Sync.dirty ? Sync.push() : Sync.pull()); toast(Sync.state === "error" ? Sync.error : "Đã đồng bộ"); break;
+    case "sync-logout": {
+      el.dataset.orig = "Đăng xuất";
+      if (!armDanger(el, "Bấm lần nữa để đăng xuất")) break;
+      await Sync.signOut(); closeSheet(); render(); toast("Đã đăng xuất. Sổ vẫn còn trên máy này."); break;
+    }
     case "move-new": openMoveSheet(); break;
     case "move-save": {
       const from = $("#mv-from").value, to = $("#mv-to").value, amt = parseMoney($("#mv-amt").value);
@@ -3074,6 +3287,7 @@ function moneyHint(input) {
 document.addEventListener("submit", e => { if (e.target.id === "qa-form") submitQuick(e); });
 
 Store.init().then(render, () => { Store.mode = "local"; render(); }).then(() => {
+  Sync.init();
   // Lối tắt "Ghi giao dịch" từ biểu tượng app: mở ngay ô ghi nhanh
   if (new URLSearchParams(location.search).has("ghi") && hasData) { history.replaceState(null, "", location.pathname); openQuickAdd(); }
 });

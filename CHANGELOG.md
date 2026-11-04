@@ -11,6 +11,11 @@
   Chi bằng thẻ thì chọn thẻ khi ghi; trả thẻ bằng Chuyển tiền từ ngân hàng sang thẻ. Chốt sổ nhập số thực tế theo từng ví (thẻ nhập dư nợ).
 - **Cài lên màn hình chính (PWA):** mở như app riêng, dùng được khi mất mạng, có lối tắt "Ghi giao dịch".
 - **Nhắc ghi chép mỗi tối** qua Google Calendar hoặc ứng dụng Lịch trên iPhone.
+- **Đăng nhập bằng email và đồng bộ** (cần bật Supabase, xem `docs/dong-bo-supabase.md`):
+  - đăng nhập bằng mã 6 số gửi qua email, không cần mật khẩu;
+  - sổ lưu trên máy trước rồi tự đẩy lên tài khoản, tự tải bản mới khi mở hoặc quay lại app, dùng được khi mất mạng;
+  - hai máy cùng sửa thì gộp giao dịch; máy đã có sổ riêng khi đăng nhập được chọn dùng sổ tài khoản hoặc gộp hai sổ;
+  - trạng thái "Đã đồng bộ / Đang đồng bộ / Chưa đồng bộ" trên đầu trang.
 - **Sao lưu và chuyển máy:** một file chứa toàn bộ sổ, gửi qua Zalo, AirDrop, email; khôi phục y nguyên trên máy khác.
 
 **Đổi**
@@ -31,6 +36,7 @@
 - Thiết lập: nếu tiền đang có ít hơn số tính ra, phần chênh lệch thành dòng "Đã chi trước khi ghi sổ" thay vì số dư đầu tháng âm.
 - Xuất rồi nhập lại Excel giữ đúng "Còn tiêu được" của tháng bắt đầu giữa chừng.
 - Ô khoản cố định lúc thiết lập hiện số đầy đủ khi gõ tắt.
+- Thông báo không có nút (vd "Đã xóa sổ") canh giữa chữ.
 - Popup dài (Danh mục, Cài đặt, Ghi nhanh, Kế hoạch…) cuộn được tới cuối; trước đây danh sách bên trong bị ép ngắn và cắt mất phần dưới. Trang phía sau không cuộn theo khi đang mở popup.
 - Lối tắt "Xem từng ví" ngay trên thẻ Tài sản ròng; trong Cài đặt đổi tên thành "Tài sản và ví".
 - Thử với 5 kiểu người dùng (sinh viên, dân văn phòng nhiều ví, nội trợ, freelancer, người lớn tuổi) và sửa:
