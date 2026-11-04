@@ -1,5 +1,18 @@
 # Nhật ký thay đổi
 
+## v0.2.1 · Dễ hiểu hơn ngay từ ngày đầu · 04/11/2026
+
+**Đổi**
+- Thanh tab mới: Tổng quan · Giao dịch · Ngân sách · Kế hoạch. Ngân sách có tab riêng; Kế hoạch gồm Khoản cố định và Mục tiêu tiết kiệm.
+- Chốt sổ không còn chiếm một tab. Mở từ nút "Chốt sổ" trong màn Giao dịch, từ ô "Tiền đang có", hoặc từ thẻ nhắc trên Tổng quan (khi tháng trước chưa chốt và 3 ngày cuối tháng).
+- Thông báo hiện ở dưới, ngay trên thanh tab, gần ngón cái. Trong ô ghi nhanh, thông báo nằm trên nút Ghi và không che nút Xong.
+- Biểu đồ thu chi chỉ hiện khi đã có từ 2 tháng dữ liệu.
+- Số 0 hiện là "0" thay vì "+0", "−0" hay "+0 ₫".
+- Gợi ý "Ghi lại khoản gần đây" không còn lặp lại khoản cố định.
+
+**Sửa**
+- Lúc thiết lập, khoản thu nhập và khoản cố định chọn "Tháng này đã nhận/đã trả" giờ được ghi thành giao dịch, nên Thu, Chi tiêu và Để dành hiện đúng ngay. Trước đây các khoản này bị ẩn và mọi số đều là 0.
+
 ## v0.2.0 · Ghi nhanh trong 1 phút · 03/11/2026
 
 **Mới**

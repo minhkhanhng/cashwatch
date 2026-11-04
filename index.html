@@ -167,6 +167,8 @@ button.row:hover { background: var(--surface-2); }
 
 /* Month view */
 .switcher { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.page-head { display: flex; align-items: center; gap: 12px; }
+.page-head h2 { margin: 0; font-size: 20px; }
 .switcher h2 { font-size: 20px; }
 .cat-row { display: grid; grid-template-columns: 1fr auto; gap: 6px 12px; padding: 11px 14px; border: 0; border-top: 1px solid var(--line); background: none; width: 100%; text-align: left; }
 .cat-row:first-child { border-top: 0; }
@@ -321,8 +323,11 @@ legend { font-weight: 600; font-size: 14px; padding: 0 6px; }
 .example { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 13px; background: var(--surface-2); border-radius: 6px; padding: 1px 6px; white-space: nowrap; }
 
 /* Toast */
-.toast { position: fixed; left: 50%; transform: translateX(-50%); top: calc(12px + env(safe-area-inset-top, 0px)); z-index: 30; background: var(--ink); color: var(--bg); border-radius: 12px; padding: 10px 12px 10px 16px; display: flex; gap: 14px; align-items: center; font-size: 14px; box-shadow: var(--shadow); max-width: calc(100% - 32px); }
-.toast button { background: none; border: 0; color: var(--accent-soft); font-weight: 700; padding: 4px 6px; }
+/* Thông báo nằm ngay trên thanh tab, gần ngón cái. Trong sheet ghi nhanh, chỗ này nằm ngay trên nút Ghi nên không che nút Xong */
+.toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(86px + env(safe-area-inset-bottom, 0px)); z-index: 30; background: var(--ink); color: var(--bg); border-radius: 12px; padding: 10px 10px 10px 16px; display: flex; gap: 12px; align-items: center; font-size: 14px; box-shadow: var(--shadow); width: max-content; max-width: min(480px, calc(100% - 32px)); animation: toast-in .18s ease-out; }
+@keyframes toast-in { from { opacity: 0; transform: translate(-50%, 8px); } }
+.toast span { flex: 1; min-width: 0; }
+.toast button { background: none; border: 0; color: var(--accent-soft); font-weight: 700; padding: 6px 8px; white-space: nowrap; flex: none; }
 .loading { padding: 60px 0; text-align: center; color: var(--muted); }
 
 @media (prefers-reduced-motion: reduce) {
@@ -346,8 +351,8 @@ legend { font-weight: 600; font-size: 14px; padding: 0 6px; }
     <button class="tab" data-act="tab" data-tab="home"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>Tổng quan</button>
     <button class="tab" data-act="tab" data-tab="month"><svg viewBox="0 0 24 24"><path d="M4 5h16M4 12h16M4 19h10"/></svg>Giao dịch</button>
     <button class="tab fab" data-act="fab" aria-label="Ghi giao dịch"><span class="fab-btn"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></span></button>
+    <button class="tab" data-act="tab" data-tab="budget"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 3v9l6.4 6.4"/></svg>Ngân sách</button>
     <button class="tab" data-act="tab" data-tab="plan"><svg viewBox="0 0 24 24"><path d="M5 21V4"/><path d="M5 4h12l-2.5 4 2.5 4H5"/></svg>Kế hoạch</button>
-    <button class="tab" data-act="tab" data-tab="close"><svg viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h4"/><path d="M14 16l1.5 1.5L18 15"/></svg>Chốt sổ</button>
   </div>
 </nav>
 
@@ -424,6 +429,8 @@ const clone = o => JSON.parse(JSON.stringify(o));
 const nf = new Intl.NumberFormat("vi-VN");
 const money = v => (v < 0 ? "−" : "") + nf.format(Math.round(Math.abs(v))) + " ₫";
 const trimNum = (v, d) => Number(v.toFixed(d)).toString().replace(".", ",");
+// Số có dấu: 0 hiện là "0", không phải "+0" hay "−0 ₫"
+const signed = (v, sign, fmt = short) => Math.round(v) ? sign + fmt(Math.abs(v)).replace(/^−/, "") : "0";
 function short(v) {
   const a = Math.abs(v), s = v < 0 ? "−" : "";
   if (a >= 1e9) return s + trimNum(a / 1e9, 2) + " tỷ";
@@ -690,7 +697,7 @@ const newGoal = () => {
 const newLoan = g => ({ id: uid(), name: "Khoản vay", total: 0, borrowAt: g.start, payFrom: addM(g.start, g.termMonths || 6), perTerm: 0, mode: "principal", rates: [{ from: g.start, rate: 0 }] });
 
 /* ---------- Storage: per-person private docs in the artifact db, browser storage as fallback ---------- */
-const APPV = "0.2.0";
+const APPV = "0.2.1";
 const LS_KEY = "cashwatch-v1";
 const Store = {
   mode: "loading", coll: null, dirty: new Set(), pending: new Set(), timer: null, flushing: false, known: new Set(),
@@ -917,7 +924,7 @@ function setupChecklist() {
   const items = [
     { done: S.recurring.some(r => r.kind === "in"), label: "Thêm thu nhập hằng tháng", act: `data-act="plan-seg" data-seg="fixed"` },
     { done: allTx().some(t => t.kind === "out" && !t.rid), label: "Ghi khoản chi đầu tiên", act: `data-act="fab"` },
-    { done: Object.keys(S.budgets).length > 0, label: "Đặt ngân sách cho một danh mục", act: `data-act="plan-seg" data-seg="budget"` },
+    { done: Object.keys(S.budgets).length > 0, label: "Đặt ngân sách đầu tiên", act: `data-act="plan-seg" data-seg="budget"` },
   ];
   const n = items.filter(i => i.done).length;
   if (n === items.length) return "";
@@ -972,6 +979,8 @@ function renderHome() {
   const w = wealthNow(), t = totals(m), { s, left, elapsed, used, status } = paceOf(m);
   const months = monthsBetween(addM(m, -5) > S.startMonth ? addM(m, -5) : S.startMonth, m);
   const data = months.map(x => { const tt = totals(x); return { m: x, inc: tt.inc, spend: tt.spend, save: tt.save }; });
+  // Biểu đồ chỉ có ý nghĩa khi đã có từ 2 tháng dữ liệu để so sánh
+  const showChart = data.filter(d => d.inc || d.spend || d.save).length >= 2;
   const byCat = amortizedByCat(m);
   const catRows = Object.entries(byCat).filter(([id]) => id !== "Savings").sort((a, b) => b[1] - a[1]);
   const catTotal = catRows.reduce((a, [, v]) => a + v, 0);
@@ -979,8 +988,10 @@ function renderHome() {
   const rest = catRows.slice(5).reduce((a, [, v]) => a + v, 0);
   const maxCat = topCats.length ? topCats[0][1] : 1;
   const list = txs(m).slice().sort((a, b) => (b.at || 0) - (a.at || 0)).slice(0, 5);
+  // Nhắc chốt sổ: tháng trước chưa chốt, hoặc 3 ngày cuối tháng này
   const closePrev = addM(m, -1);
-  const needClose = closePrev >= S.startMonth && !S.closings[closePrev];
+  const closeM = closePrev >= S.startMonth && !S.closings[closePrev] ? closePrev
+    : Number(today().slice(8)) > daysIn(m) - 3 && !S.closings[m] ? m : null;
   view().innerHTML = `
   <div class="app">
     <section class="hero worth">
@@ -1009,9 +1020,9 @@ function renderHome() {
         <div class="pace-legend" style="margin-top:6px"><span>${s.safe > 0 ? `≈ ${short(s.safe / left)}/ngày · còn ${left} ngày` : `còn ${left} ngày`}</span><span>Hôm nay ▲</span></div>
         <details class="info" style="margin-top:8px"><summary>Cách tính</summary>
           <div class="ledger" style="margin-top:8px">
-            ${s.base ? `<span>Tiền có lúc bắt đầu</span><span class="v">+${short(s.base)}</span>` : ""}
-            <span>Thu dự kiến${s.pendIn ? ` (chờ ${short(s.pendIn)})` : ""}</span><span class="v">+${short(s.incomeExp)}</span>
-            <span>Cố định & để dành${s.pendOut ? ` (chờ ${short(s.pendOut)})` : ""}</span><span class="v">−${short(s.fixedPlan)}</span>
+            ${s.base ? `<span>Số dư đầu tháng</span><span class="v">${signed(s.base, s.base < 0 ? "−" : "+")}</span>` : ""}
+            <span>Thu dự kiến${s.pendIn ? ` (chờ ${short(s.pendIn)})` : ""}</span><span class="v">${signed(s.incomeExp, "+")}</span>
+            <span>Cố định & để dành${s.pendOut ? ` (chờ ${short(s.pendOut)})` : ""}</span><span class="v">${signed(s.fixedPlan, "−")}</span>
             <span>Đã chi thêm</span><span class="v">${s.varOut ? "−" + short(s.varOut) : "0"}</span>
             <span class="total">Còn tiêu được</span><span class="v total">${short(s.safe)}</span>
           </div>
@@ -1019,26 +1030,26 @@ function renderHome() {
         </details>
       </div>
       <div class="trio">
-        <div><span>Thu</span><b class="num" style="color:var(--pos)">+${short(t.inc)}</b></div>
-        <div><span>Chi tiêu</span><b class="num">−${short(t.spend)}</b></div>
+        <div><span>Thu</span><b class="num" style="color:var(--pos)">${signed(t.inc, "+")}</b></div>
+        <div><span>Chi tiêu</span><b class="num">${signed(t.spend, "−")}</b></div>
         <div><span>Để dành</span><b class="num" style="color:var(--accent)">${short(t.save)}</b></div>
       </div>
     </section>
 
-    ${needClose ? `<div class="card"><button class="row" data-act="go-close" data-m="${closePrev}">
+    ${closeM ? `<div class="card"><button class="row" data-act="go-close" data-m="${closeM}">
       <span class="avatar save">✓</span>
-      <span class="row-main"><span class="row-title">Chốt sổ ${mLabel(closePrev).toLowerCase()}</span><span class="row-meta">2 phút đối chiếu tiền mặt và tài khoản</span></span>
+      <span class="row-main"><span class="row-title">${closeM === m ? "Cuối tháng rồi: chốt sổ" : "Chốt sổ"} ${mLabel(closeM).toLowerCase()}</span><span class="row-meta">2 phút đối chiếu tiền mặt và tài khoản</span></span>
       <span class="link">Chốt</span></button></div>` : ""}
     ${pendingBlock(m)}
 
-    <section class="section">
+    ${showChart ? `<section class="section">
       <div class="section-head"><h2>Thu chi ${data.length} tháng</h2><span class="muted" style="font-size:12.5px">Chạm cột để mở tháng</span></div>
       <div class="card chart-wrap" id="cf-chart">
         <div class="legend"><span><i class="sw-bar"></i>Thu</span><span><i class="sw-bar" style="background:var(--debt)"></i>Chi tiêu (không gồm để dành)</span></div>
         ${cashflowChart(data)}
         <div class="tip" id="cf-tip" hidden></div>
       </div>
-    </section>
+    </section>` : ""}
 
     <section class="section">
       <div class="section-head"><h2>Chi tiêu theo danh mục</h2><button class="link" data-act="plan-seg" data-seg="budget">Ngân sách</button></div>
@@ -1062,7 +1073,7 @@ function renderHome() {
       <div class="card rows">${list.length ? list.map(txRow).join("") : `<div class="empty">Chưa có khoản nào. Bấm nút + ở giữa thanh dưới để ghi, ví dụ <span class="example">phở 55k</span>.</div>`}</div>
     </section>
   </div>`;
-  attachCfHover(data);
+  if (showChart) attachCfHover(data);
 }
 
 const WEEKDAY = ["Chủ nhật", "Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7"];
@@ -1117,8 +1128,8 @@ function renderMonth() {
         <button class="icon-btn" data-act="month-shift" data-k="1" aria-label="Tháng sau" ${canNext ? "" : "disabled"} style="${canNext ? "" : "opacity:.35"}"><svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></button>
       </div>
       <div class="trio flat">
-        <div><span>Thu</span><b class="num" style="color:var(--pos)">+${short(t.inc)}</b></div>
-        <div><span>Chi tiêu</span><b class="num">−${short(t.spend)}</b></div>
+        <div><span>Thu</span><b class="num" style="color:var(--pos)">${signed(t.inc, "+")}</b></div>
+        <div><span>Chi tiêu</span><b class="num">${signed(t.spend, "−")}</b></div>
         <div><span>Để dành</span><b class="num" style="color:var(--accent)">${short(t.save)}</b></div>
       </div>
       <div class="ledger">
@@ -1126,6 +1137,7 @@ function renderMonth() {
         ${open != null ? `<span class="total">Số dư cuối tháng</span><span class="v total">${money(open + t.net)}</span>` : ""}
         ${close ? `<span>Thực tế khi chốt</span><span class="v">${money(close.cash + close.bank)}</span>` : ""}
       </div>
+      ${open != null ? `<button class="btn block" style="margin-top:12px" data-act="go-close" data-m="${m}">${close ? "Xem chốt sổ" : `Chốt sổ ${mLabel(m).toLowerCase()}`}</button>` : ""}
     </section>
     ${pendingBlock(m)}
     <div class="seg seg3" role="tablist" aria-label="Lọc">
@@ -1138,8 +1150,8 @@ function renderMonth() {
 
 function planHead() {
   const seg = ui.tab;
-  return `<div class="seg seg3" role="tablist">
-    ${[["budget", "Ngân sách"], ["fixed", "Cố định"], ["goal", "Mục tiêu"]].map(([k, l]) => `<button type="button" class="${seg === k ? "on" : ""}" data-act="plan-seg" data-seg="${k}">${l}</button>`).join("")}
+  return `<div class="seg" role="tablist">
+    ${[["fixed", "Khoản cố định"], ["goal", "Mục tiêu tiết kiệm"]].map(([k, l]) => `<button type="button" class="${seg === k ? "on" : ""}" data-act="plan-seg" data-seg="${k}">${l}</button>`).join("")}
   </div>`;
 }
 function renderBudget() {
@@ -1154,7 +1166,6 @@ function renderBudget() {
   const anyAmort = Object.entries(M).some(([tm, l]) => tm <= m && l.some(x => x.n > 1 && addM(tm, x.n - 1) >= m));
   view().innerHTML = `
   <div class="app">
-    ${planHead()}
     <section class="hero">
       <div class="eyebrow">Ngân sách · ${mLabel(m)}</div>
       ${totB ? `<div class="hero-num ${totS > totB ? "neg" : ""}">${nf.format(Math.round(Math.abs(totB - totS)))}<span class="cur">₫ ${totS > totB ? "vượt" : "còn lại"}</span></div>
@@ -1207,12 +1218,12 @@ function renderFixed() {
     <section class="hero">
       <div class="eyebrow">Khoản cố định · ${mLabel(cm)}</div>
       <div class="ledger" style="border-top:0;padding-top:0">
-        <span>Thu cố định</span><span class="v" style="color:var(--pos)">+${money(inSum)}</span>
-        <span>Chi cố định</span><span class="v">−${money(outSum)}</span>
-        <span>Để dành</span><span class="v">−${money(saveSum)}</span>
+        <span>Thu cố định</span><span class="v" style="color:var(--pos)">${signed(inSum, "+", money)}</span>
+        <span>Chi cố định</span><span class="v">${signed(outSum, "−", money)}</span>
+        <span>Để dành</span><span class="v">${signed(saveSum, "−", money)}</span>
         <span class="total">Còn cho chi linh hoạt</span><span class="v total">${money(inSum - outSum - saveSum)}</span>
       </div>
-      <p class="muted" style="margin:0;font-size:13px">Đầu mỗi tháng các khoản này hiện ở màn Hôm nay để bạn bấm xác nhận, không cần gõ lại.</p>
+      <p class="muted" style="margin:0;font-size:13px">Đầu mỗi tháng các khoản này hiện ở màn Tổng quan để bạn bấm xác nhận, không cần gõ lại.</p>
     </section>
     ${group("Thu", S.recurring.filter(r => r.kind === "in"))}
     ${group("Chi & để dành", S.recurring.filter(r => r.kind !== "in"))}
@@ -1232,8 +1243,10 @@ function renderClose() {
   const t = totals(m), open = openingOf(m) ?? 0, book = open + t.net;
   const c = S.closings[m];
   const hist = Object.entries(S.closings).sort((a, b) => b[0].localeCompare(a[0]));
+  const back = ui.closeBack === "month" ? ["month", "Giao dịch"] : ["home", "Tổng quan"];
   view().innerHTML = `
   <div class="app">
+    <div class="page-head"><button class="icon-btn" data-act="tab" data-tab="${back[0]}" aria-label="Quay lại ${back[1]}"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></button><h2>Chốt sổ</h2></div>
     <div class="month-chips" role="tablist" aria-label="Chọn tháng">
       ${months.map(x => `<button class="chip ${x === m ? "on" : ""}" data-act="close-month" data-m="${x}">${mShort(x)}${S.closings[x] ? " ✓" : ""}</button>`).join("")}
     </div>
@@ -1241,8 +1254,8 @@ function renderClose() {
       <div class="eyebrow">Theo sổ · ${mLabel(m)}</div>
       <div class="ledger" style="border-top:0;padding-top:0">
         <span>Đầu tháng</span><span class="v">${money(open)}</span>
-        <span>Thu</span><span class="v" style="color:var(--pos)">+${money(t.inc)}</span>
-        <span>Chi (gồm để dành)</span><span class="v">−${money(t.out)}</span>
+        <span>Thu</span><span class="v" style="color:var(--pos)">${signed(t.inc, "+", money)}</span>
+        <span>Chi (gồm để dành)</span><span class="v">${signed(t.out, "−", money)}</span>
         <span class="total">Số dư theo sổ</span><span class="v total">${money(book)}</span>
       </div>
       ${pendingRec(m).length ? `<span class="pill warn" style="align-self:flex-start">Còn ${pendingRec(m).length} khoản cố định chưa xác nhận</span>` : ""}
@@ -1485,22 +1498,27 @@ function openSetup() {
 }
 function saveSetup(st) {
   const cur = curMonth();
-  const rec = [], skip = [];
+  const rec = [], done = [];
   const inc = parseMoney($("#su-income").value);
-  if (inc && inc > 0) { const r = { id: uid(), name: "Lương", amt: inc, kind: "in", cat: "Paycheck", active: true, since: cur }; rec.push(r); if (st.incDone) skip.push(r.id); }
+  if (inc && inc > 0) { const r = { id: uid(), name: "Lương", amt: inc, kind: "in", cat: "Paycheck", active: true, since: cur }; rec.push(r); if (st.incDone) done.push(r); }
   for (const f of SETUP_FIXED) {
     const v = parseMoney($("#su-" + f.key).value);
     if (!v || v <= 0) continue;
     const r = { id: uid(), name: f.name, amt: v, kind: "out", cat: f.cat, active: true, since: cur };
-    rec.push(r); if (st.fixDone) skip.push(r.id);
+    rec.push(r); if (st.fixDone) done.push(r);
   }
-  S = Object.assign(DEFAULTS(), { startMonth: cur, openingBalance: parseMoney($("#su-cash").value) || 0, startMid: true, recurring: rec, skips: skip.length ? { [cur]: skip } : {} });
+  // Khoản đã nhận/đã trả trong tháng được ghi thành giao dịch thật, để Thu, Chi, Để dành hiện đúng ngay.
+  // Tiền đang có đã gồm các khoản này, nên số dư đầu tháng được tính ngược lại từ đó.
+  const cash = parseMoney($("#su-cash").value) || 0;
+  const net = done.reduce((a, r) => a + (r.kind === "in" ? r.amt : -r.amt), 0);
+  S = Object.assign(DEFAULTS(), { startMonth: cur, openingBalance: cash - net, startMid: true, recurring: rec, skips: {} });
   M = {}; hasData = true; ui.tab = "home";
+  for (const r of done) addTx({ m: cur, d: cur + "-01", kind: r.kind, amt: r.amt, unit: r.amt, qty: 1, desc: r.name, cat: r.cat, n: 1, rid: r.id });
   Store.touch("settings"); closeSheet(); render(); window.scrollTo(0, 0);
-  toast("Xong! Bấm nút + ở giữa để ghi khoản chi đầu tiên");
+  toast("Xong! Bấm nút + để ghi khoản chi đầu tiên");
 }
 
-const PLAN_TABS = ["budget", "fixed", "goal"];
+const PLAN_TABS = ["fixed", "goal"];
 function render() {
   const ready = Store.mode !== "loading";
   $("#store-label").textContent = !ready ? "Đang mở sổ…" : Store.mode === "cloud" ? "Sổ riêng của bạn" : "Lưu trên trình duyệt này";
@@ -1555,7 +1573,7 @@ function qaState() {
 function recentEntries(kind) {
   const seen = new Set(), out = [];
   for (const t of allTx().slice().sort((a, b) => (b.at || 0) - (a.at || 0))) {
-    if (t.kind !== kind || !t.desc) continue;
+    if (t.kind !== kind || !t.desc || t.rid) continue; // khoản cố định đã tự hiện mỗi tháng, không cần gợi ý lại
     const k = norm(t.desc) + "|" + t.amt;
     if (seen.has(k)) continue;
     seen.add(k); out.push(t);
@@ -2171,7 +2189,8 @@ document.addEventListener("click", async e => {
       break;
     }
     case "tab":
-      ui.tab = el.dataset.tab === "plan" ? (ui.planSeg || "budget") : el.dataset.tab;
+      if (el.dataset.tab === "close") ui.closeBack = ui.tab;
+      ui.tab = el.dataset.tab === "plan" ? (ui.planSeg || "fixed") : el.dataset.tab;
       if (el.dataset.m) ui.viewMonth = el.dataset.m;
       if (ui.tab === "close") ui.closeMonth = null;
       if (ui.tab === "home") ui.qaMonth = curMonth();
@@ -2195,7 +2214,7 @@ document.addEventListener("click", async e => {
       Store.touch("settings"); closeSheet(); render();
       toast(st.fresh ? "Đã tạo sổ. Thêm khoản cố định ở tab Cố định." : "Đã lưu điểm bắt đầu"); break;
     }
-    case "go-close": ui.tab = "close"; ui.closeMonth = el.dataset.m; render(); window.scrollTo(0, 0); break;
+    case "go-close": ui.closeBack = ui.tab; ui.tab = "close"; ui.closeMonth = el.dataset.m; render(); window.scrollTo(0, 0); break;
     case "confirm-rec": {
       const r = S.recurring.find(x => x.id === el.dataset.id); if (!r) break;
       const t = confirmRec(r, el.dataset.m); render();
