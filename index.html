@@ -1026,7 +1026,7 @@ function goalMini() {
   const g = S.goal;
   if (!g) return `<div class="card"><button class="row" data-act="plan-seg" data-seg="goal">
       <span class="avatar save">MT</span>
-      <span class="row-main"><span class="row-title">Lập kế hoạch tiết kiệm</span><span class="row-meta">Sổ đáo hạn từng kỳ, trả nợ, xem bao giờ xong</span></span>
+      <span class="row-main"><span class="row-title">Lập kế hoạch tiết kiệm</span><span class="row-meta">Tiết kiệm, trả nợ</span></span>
       <span class="link">Bắt đầu</span></button></div>`;
   const terms = computeGoal(g), cur = curMonth(), next = terms.find(t => t.m >= cur), last = terms[terms.length - 1];
   let title, big, pct = null, sub;
@@ -1073,7 +1073,7 @@ function renderHome() {
   view().innerHTML = `
   <div class="app">
     <section class="hero worth">
-      <div class="eyebrow-row"><span class="eyebrow">Tài sản ròng</span><details class="info"><summary>Là gì?</summary><p>Tổng tài sản sau khi trừ nợ: tiền đang có (tiền mặt và tài khoản) cộng tiền để dành, trừ đi khoản còn nợ.</p></details></div>
+      <div class="eyebrow-row"><span class="eyebrow">Tài sản ròng</span><details class="info"><summary>Là gì?</summary><p>Tiền đang có cộng tiền để dành, trừ nợ.</p></details></div>
       <div class="hero-num ${w.net < 0 ? "neg" : ""}">${w.net < 0 ? "−" : ""}${nf.format(Math.round(Math.abs(w.net)))}<span class="cur">₫</span></div>
       <div class="tiles">
         <button class="tile" data-act="tab" data-tab="wallets"><span class="tile-label">Tiền đang có</span><span class="tile-v num">${short(w.cash)}</span></button>
@@ -1104,7 +1104,7 @@ function renderHome() {
             <span>Đã chi thêm</span><span class="v">${s.varOut ? "−" + short(s.varOut) : "0"}</span>
             <span class="total">Còn tiêu được</span><span class="v total">${short(s.safe)}</span>
           </div>
-          <p>Thanh màu là phần đã chi so với số được tiêu. Vạch đen là hôm nay: thanh vượt vạch nghĩa là đang chi nhanh hơn số ngày đã qua.</p>
+          <p>Vạch đen là hôm nay. Thanh màu vượt vạch là đang chi nhanh hơn dự kiến.</p>
         </details>
       </div>
       <div class="trio">
@@ -1116,12 +1116,12 @@ function renderHome() {
 
     ${closeM ? `<div class="card"><button class="row" data-act="go-close" data-m="${closeM}">
       <span class="avatar save">✓</span>
-      <span class="row-main"><span class="row-title">${closeM === m ? "Cuối tháng rồi: chốt sổ" : "Chốt sổ"} ${mLabel(closeM).toLowerCase()}</span><span class="row-meta">2 phút đối chiếu tiền mặt và tài khoản</span></span>
+      <span class="row-main"><span class="row-title">${closeM === m ? "Cuối tháng rồi: chốt sổ" : "Chốt sổ"} ${mLabel(closeM).toLowerCase()}</span><span class="row-meta">Đối chiếu với tiền thực có</span></span>
       <span class="link">Chốt</span></button></div>` : ""}
     ${pendingBlock(m)}
 
     ${showChart ? `<section class="section">
-      <div class="section-head"><h2>Thu chi ${data.length} tháng</h2><span class="muted" style="font-size:12.5px">Chạm cột để mở tháng</span></div>
+      <div class="section-head"><h2>Thu chi ${data.length} tháng</h2></div>
       <div class="card chart-wrap" id="cf-chart">
         <div class="legend"><span><i class="sw-bar"></i>Thu</span><span><i class="sw-bar" style="background:var(--debt)"></i>Chi tiêu (không gồm để dành)</span></div>
         ${cashflowChart(data)}
@@ -1250,10 +1250,10 @@ function renderBudget() {
       <div>
         <div class="pace"><div class="pace-fill ${totS > totB ? "neg" : ""}" style="width:${Math.min(100, totS / totB * 100)}%"></div><div class="pace-mark" style="left:calc(${(elapsed * 100).toFixed(1)}% - 1px)"></div></div>
         <div class="pace-legend" style="margin-top:6px"><span>Đã chi ${short(totS)} / ${short(totB)}</span><span>còn ${left} ngày</span></div>
-      </div>` : `<p class="note">Chưa đặt ngân sách nào. Chạm một danh mục bên dưới để đặt.</p>`}
+      </div>` : `<p class="note">Chạm một danh mục để đặt ngân sách.</p>`}
     </section>
     <section class="section">
-      <div class="section-head"><h2>Theo danh mục</h2><span class="muted" style="font-size:12.5px">Chạm để đổi ngân sách</span></div>
+      <div class="section-head"><h2>Theo danh mục</h2></div>
       <div class="card">${cats.length ? cats.map(c => {
         const spent = byCat[c.id] || 0, bud = budgetAt(c.id, m);
         return `<button class="cat-row" data-act="budget" data-cat="${esc(c.id)}" data-m="${m}">
@@ -1262,7 +1262,7 @@ function renderBudget() {
           ${bud ? `<span class="bar"><i class="${spent > bud ? "over" : ""}" style="width:${Math.min(100, spent / bud * 100)}%"></i></span>` : ""}
         </button>`;
       }).join("") : `<div class="empty">Chưa có khoản chi nào.</div>`}</div>
-      ${anyAmort ? `<p class="note">Khoản chia nhiều tháng được tính đều vào từng tháng. Số dư vẫn tính theo tiền thực trả.</p>` : ""}
+      ${anyAmort ? `<p class="note">Khoản chia nhiều tháng được tính đều vào từng tháng.</p>` : ""}
     </section>
     ${others.length ? `<section class="section"><h2>Đặt ngân sách cho danh mục khác</h2>
       <div class="chips">${others.map(c => `<button class="chip" data-act="budget" data-cat="${esc(c.id)}" data-m="${m}">+ ${esc(c.label)}</button>`).join("")}</div></section>` : ""}
@@ -1301,7 +1301,7 @@ function renderFixed() {
         <span>Để dành</span><span class="v">${signed(saveSum, "−", money)}</span>
         <span class="total">Còn cho chi linh hoạt</span><span class="v total">${money(inSum - outSum - saveSum)}</span>
       </div>
-      <p class="muted" style="margin:0;font-size:13px">Đầu mỗi tháng các khoản này hiện ở màn Tổng quan để bạn bấm xác nhận, không cần gõ lại.</p>
+      <p class="muted" style="margin:0;font-size:13px">Mỗi tháng tự hiện ở Tổng quan để bấm xác nhận.</p>
     </section>
     ${group("Thu", S.recurring.filter(r => r.kind === "in"))}
     ${group("Chi & để dành", S.recurring.filter(r => r.kind !== "in"))}
@@ -1318,7 +1318,6 @@ function renderWallets() {
     <section class="hero">
       <div class="eyebrow">Tổng các ví</div>
       <div class="hero-num ${total < 0 ? "neg" : ""}">${total < 0 ? "−" : ""}${nf.format(Math.round(Math.abs(total)))}<span class="cur">₫</span></div>
-      <p class="muted" style="margin:0;font-size:13px">Tiền mặt và tài khoản theo sổ, chưa gồm tiền để dành.</p>
     </section>
     <div class="card rows">${list.map(w => `<button class="row" data-act="wallet-edit" data-w="${w.id}">
       ${walletIcon(w.icon)}
@@ -1326,7 +1325,7 @@ function renderWallets() {
       <span class="row-amt num ${w.bal < 0 ? "neg-t" : ""}">${money(w.bal)}</span>
     </button>`).join("")}</div>
     <div class="actions"><button class="btn" data-act="wallet-new">+ Thêm ví</button>${hasWallets() ? `<button class="btn primary" data-act="move-new">Chuyển tiền</button>` : ""}</div>
-    ${hasWallets() ? "" : `<p class="note">Tách tiền thành nhiều ví như tiền mặt, ngân hàng, Momo để biết mỗi nơi còn bao nhiêu. Khi ghi giao dịch, chọn ví bằng một chạm.</p>`}
+    ${hasWallets() ? "" : `<p class="note">Tách tiền mặt, ngân hàng, Momo… để biết mỗi nơi còn bao nhiêu.</p>`}
     ${moves.length ? `<section class="section"><h2>Chuyển tiền gần đây</h2><div class="card rows">${moves.map(mv => `<div class="row">
       <span class="row-main"><span class="row-title">${esc(walletName(mv.from === MAIN ? null : mv.from))} → ${esc(walletName(mv.to === MAIN ? null : mv.to))}</span><span class="row-meta">${dayLabel(mv.d)}</span></span>
       <span class="row-amt num">${short(mv.amt)}</span>
@@ -1342,11 +1341,11 @@ function openWalletSheet(id) {
   const now = walletsNow(), cur = isNew ? 0 : (now.list.find(x => x.id === w.id) || { bal: 0 }).bal, mainBal = now.list[0].bal;
   openSheet(`${sheetHead(isNew ? "Thêm ví" : "Sửa ví")}
     <div class="field"><label for="w-name">Tên ví</label><input id="w-name" value="${esc(w.name)}" placeholder="vd Tiền mặt, Momo, Techcombank" maxlength="30"></div>
-    ${isMain ? `<p class="note">${esc(w.name)} tự tính bằng tổng tiền đang có trừ các ví khác. Muốn chỉnh số dư, hãy chốt sổ.</p>` : `
+    ${isMain ? `<p class="note">Tự tính bằng tổng tiền trừ các ví khác.</p>` : `
     <div class="field"><label>Loại</label><div class="chips" id="w-icons">${WALLET_ICONS.map(([ic, l]) => `<button type="button" class="chip ${w.icon === ic ? "on" : ""}" data-act="w-icon" data-icon="${ic}">${l}</button>`).join("")}</div></div>
     <div class="field"><label for="w-bal">${isNew ? "Số dư hiện tại" : "Số dư đúng lúc này"}</label><input id="w-bal" inputmode="decimal" data-money value="${isNew ? "" : nf.format(Math.round(cur))}" placeholder="vd 2tr"></div>
     ${isNew ? `<div class="field"><label>Số tiền này</label><div class="seg" id="w-src"><button type="button" class="on" data-act="w-src" data-v="split">Đã có trong tổng</button><button type="button" data-act="w-src" data-v="new">Là tiền mới</button></div>
-      <span class="help" id="w-src-note">Tách ra từ ${esc(S.mainWallet || "Ví chính")} (đang có ${money(mainBal)}).</span></div>` : `<p class="note">Đổi số dư ở đây thì phần chênh lệch được tính vào ${esc(S.mainWallet || "Ví chính")}.</p>`}`}
+      <span class="help" id="w-src-note">Tách ra từ ${esc(S.mainWallet || "Ví chính")} (đang có ${money(mainBal)}).</span></div>` : `<p class="note">Phần chênh lệch tính vào ${esc(S.mainWallet || "Ví chính")}.</p>`}`}
     <div class="actions">
       ${isNew || isMain ? "" : `<button class="btn danger" data-act="wallet-del">Xóa ví</button>`}
       <button class="btn primary" data-act="wallet-save">${isNew ? "Thêm ví" : "Lưu"}</button>
@@ -1361,7 +1360,7 @@ function openMoveSheet() {
       <div class="field"><label for="mv-to">Đến</label><select id="mv-to">${opts(L[1] ? L[1].id : L[0].id)}</select></div>
     </div>
     <div class="field"><label for="mv-amt">Số tiền</label><input id="mv-amt" inputmode="decimal" data-money placeholder="vd 500k"></div>
-    <p class="note">Ví dụ rút tiền ATM, nạp Momo. Chuyển tiền không tính là thu hay chi.</p>
+    <p class="note">Không tính là thu hay chi.</p>
     <button class="btn primary block" data-act="move-save">Chuyển</button>`, {});
 }
 function defaultCloseMonth() {
@@ -1399,7 +1398,7 @@ function renderClose() {
           <span>Tài khoản</span><span class="v">${money(c.bank)}</span>`}
           <span class="total">Thực tế đã chốt</span><span class="v total">${money(c.cash + c.bank)}</span>
         </div>
-        <p class="muted" style="margin:0;font-size:13px">Tháng sau bắt đầu từ số thực tế này. Chốt lúc ${new Date(c.at).toLocaleDateString("vi-VN")}.</p>
+        <p class="muted" style="margin:0;font-size:13px">Chốt ngày ${new Date(c.at).toLocaleDateString("vi-VN")}. Tháng sau tính từ số này.</p>
         <button class="btn" data-act="reopen" data-m="${m}">Mở lại để chốt lại</button>
       </section>` : `<section class="section">
         <h2>Tiền thực có lúc này</h2>
@@ -1424,7 +1423,7 @@ function closeFields() {
     <div class="field"><label for="close-bank">Tài khoản ngân hàng</label><input id="close-bank" class="close-in" data-w="bank" inputmode="decimal" data-money placeholder="vd 7.800.000"></div>
   </div>`;
   return `<div class="stack">${walletsNow().list.map(w => `<div class="field"><label for="close-w-${w.id}">${esc(w.name)}</label><input id="close-w-${w.id}" class="close-in" data-w="${w.id}" inputmode="decimal" data-money placeholder="Theo sổ ${nf.format(Math.round(w.bal))}"></div>`).join("")}
-    <p class="note" style="margin:0">Để trống ví nào thì giữ số theo sổ của ví đó.</p></div>`;
+    <p class="note" style="margin:0">Để trống là giữ số theo sổ.</p></div>`;
 }
 function readClose() {
   const vals = {}; let any = false;
@@ -1443,7 +1442,6 @@ function updateCloseDiff() {
   box.innerHTML = `<div class="diff ${d < 0 ? "neg" : "pos"}">
     <span>Thực tế ${money(real)} · sổ ${money(book)}</span>
     <strong>${d < 0 ? "Thiếu" : "Dư"} ${money(Math.abs(d))}</strong>
-    <span style="font-size:13px">${d < 0 ? "Có khoản chi chưa ghi. Ghi lại nếu nhớ ra, hoặc gộp thành một khoản." : "Có khoản thu chưa ghi hoặc ghi chi thừa."}</span>
     <button class="btn" style="align-self:flex-start;margin-top:4px" data-act="close-adjust" data-d="${d}">Ghi ${short(Math.abs(d))} thành “${d < 0 ? "Chi chưa rõ" : "Thu chưa rõ"}”</button>
   </div>`;
 }
@@ -1523,7 +1521,7 @@ function renderGoal() {
       <section class="hero">
         <div class="eyebrow">Mục tiêu</div>
         <h2 style="font-size:24px">Sổ tiết kiệm đáo hạn từng kỳ và kế hoạch trả nợ</h2>
-        <p class="note">Mỗi kỳ đáo hạn: gốc cộng lãi, cộng tiền góp hằng tháng và khoản thưởng, làm tròn chẵn rồi gửi lại. Nếu có khoản vay, mỗi kỳ trích ra một phần để trả gốc và lãi. Lãi gửi, lãi vay và tiền góp đều đổi được theo từng mốc thời gian.</p>
+        <p class="note">Mỗi kỳ đáo hạn, gốc, lãi và tiền góp được làm tròn rồi gửi lại. Có khoản vay thì trích ra trả mỗi kỳ.</p>
         <button class="btn primary block" data-act="goal-edit">Lập kế hoạch</button>
       </section>
     </div>`;
@@ -1609,19 +1607,19 @@ function renderWelcome() {
   view().innerHTML = `
   <div class="welcome">
     <h1>Biết ngay tháng này còn tiêu được bao nhiêu.</h1>
-    <p class="muted" style="margin:0">Trả lời 3 câu hỏi để bắt đầu, mất khoảng 1 phút. Sau đó mỗi lần ghi một khoản chỉ cần vài giây.</p>
+    <p class="muted" style="margin:0">3 câu hỏi, khoảng 1 phút là dùng được.</p>
     <ol class="steps">
-      <li>${catAvatar("out", "Food")}<span><b>Ghi trong vài giây</b><span class="muted">Gõ <span class="example">55k phở</span> hoặc chạm lại khoản đã ghi trước đó.</span></span></li>
-      <li>${catAvatar("out", "Home")}<span><b>Khoản cố định tự hiện</b><span class="muted">Lương, tiền nhà, tiết kiệm: mỗi tháng chỉ bấm xác nhận.</span></span></li>
-      <li>${catAvatar("out", "Savings")}<span><b>Biết còn tiêu được bao nhiêu</b><span class="muted">App tự trừ khoản cố định và báo khi bạn chi nhanh hơn dự kiến.</span></span></li>
+      <li>${catAvatar("out", "Food")}<span><b>Ghi trong vài giây</b><span class="muted">Gõ <span class="example">55k phở</span> là xong.</span></span></li>
+      <li>${catAvatar("out", "Home")}<span><b>Khoản cố định tự hiện</b><span class="muted">Lương, tiền nhà: mỗi tháng chỉ bấm xác nhận.</span></span></li>
+      <li>${catAvatar("out", "Savings")}<span><b>Biết còn tiêu được bao nhiêu</b><span class="muted">Tự trừ khoản cố định, báo khi chi quá nhanh.</span></span></li>
     </ol>
     <button class="btn primary block" data-act="start-fresh">Bắt đầu trong 1 phút</button>
     <details class="info"><summary>Đã dùng CashWatch trên máy khác?</summary>
-      <p>Trên máy cũ, vào Cài đặt → Tạo file sao lưu và gửi file sang máy này. Sau đó mở file ở đây.</p>
+      <p>Trên máy cũ: Cài đặt → Tạo file sao lưu. Gửi file sang đây rồi mở.</p>
       <div class="actions" style="margin-top:10px"><button class="btn" data-act="pick-json">Khôi phục từ file sao lưu</button></div>
     </details>
     <details class="info"><summary>Đã có sổ trên Excel?</summary>
-      <p>Tải file mẫu, dán dữ liệu vào rồi nhập. File được đọc ngay trên máy bạn, không gửi đi đâu.</p>
+      <p>Tải file mẫu, dán dữ liệu vào rồi nhập.</p>
       <div class="actions" style="margin-top:10px"><button class="btn" data-act="template">Tải file mẫu</button><button class="btn" data-act="pick-file">Nhập file Excel</button></div>
     </details>
   </div>`;
@@ -1637,14 +1635,13 @@ const SETUP_FIXED = [
 ];
 function openSetup() {
   openSheet(`${sheetHead("Bắt đầu trong 1 phút")}
-    <div class="field"><label for="su-cash">1. Hiện bạn đang có bao nhiêu tiền?</label><input id="su-cash" inputmode="decimal" data-money placeholder="vd 8tr"><span class="help">Cộng tiền mặt và tiền trong tài khoản. Không chắc thì ước lượng, cuối tháng chốt sổ sẽ chỉnh lại.</span></div>
+    <div class="field"><label for="su-cash">1. Hiện bạn đang có bao nhiêu tiền?</label><input id="su-cash" inputmode="decimal" data-money placeholder="vd 8tr"><span class="help">Tiền mặt cộng tài khoản. Ước lượng cũng được.</span></div>
     <div class="field"><label for="su-income">2. Thu nhập mỗi tháng (lương…)</label><input id="su-income" inputmode="decimal" data-money placeholder="vd 15tr">
       <div class="seg" id="su-inc-seg"><button type="button" class="on" data-act="su-flag" data-k="incDone" data-v="1">Tháng này đã nhận</button><button type="button" data-act="su-flag" data-k="incDone" data-v="0">Chưa nhận</button></div></div>
-    <div class="field"><label>3. Các khoản chi cố định mỗi tháng</label><span class="help">Điền số tiền cho khoản bạn có, bỏ trống khoản không có.</span>
+    <div class="field"><label>3. Các khoản chi cố định mỗi tháng</label><span class="help">Bỏ trống khoản không có.</span>
       <div class="card rows setup-fixed">${SETUP_FIXED.map(f => `<label class="row" for="su-${f.key}">${catAvatar("out", f.cat)}<span class="row-main"><span class="row-title">${f.name}</span></span><input id="su-${f.key}" inputmode="decimal" data-money placeholder="0"></label>`).join("")}</div>
       <div class="seg" id="su-fix-seg"><button type="button" class="on" data-act="su-flag" data-k="fixDone" data-v="1">Tháng này đã trả</button><button type="button" data-act="su-flag" data-k="fixDone" data-v="0">Chưa trả</button></div></div>
-    <button class="btn primary block" data-act="setup-save">Bắt đầu dùng</button>
-    <p class="note">Sửa lại bất cứ lúc nào ở Kế hoạch → Cố định.</p>`, { setup: true, incDone: true, fixDone: true });
+    <button class="btn primary block" data-act="setup-save">Bắt đầu dùng</button>`, { setup: true, incDone: true, fixDone: true });
 }
 function saveSetup(st) {
   const cur = curMonth();
@@ -1668,7 +1665,7 @@ function saveSetup(st) {
   for (const r of done) addTx({ m: cur, d: cur + "-01", kind: r.kind, amt: r.amt, unit: r.amt, qty: 1, desc: r.name, cat: r.cat, n: 1, rid: r.id });
   if (opening < 0) addTx({ m: cur, d: today(), kind: "out", amt: -opening, unit: -opening, qty: 1, desc: "Đã chi trước khi ghi sổ", cat: "Other", n: 1, adj: true });
   Store.touch("settings"); closeSheet(); render(); window.scrollTo(0, 0);
-  toast("Xong! Bấm nút + để ghi khoản chi đầu tiên");
+  toast("Xong! Bấm + để ghi khoản đầu tiên");
 }
 
 const PLAN_TABS = ["fixed", "goal"];
@@ -1743,7 +1740,7 @@ function renderQaPreview() {
   $("#qa-kind").innerHTML = `<div class="seg" role="tablist"><button type="button" class="${kind === "out" ? "on" : ""}" data-act="qa-kind-set" data-kind="out">Khoản chi</button><button type="button" class="${kind === "in" ? "on" : ""}" data-act="qa-kind-set" data-kind="in">Khoản thu</button></div>`;
   box.className = `qa-amount ${kind === "in" ? "in" : ""} ${p.amount == null ? "empty" : ""}`;
   box.innerHTML = `<span class="num">${p.amount != null ? (kind === "in" ? "+" : "−") + nf.format(p.amount) : "0"}<small>₫</small></span>
-    <span class="qa-sub">${typed ? (p.amount == null ? "Thêm số tiền, vd 55k" : `${esc(p.desc || catOf(kind, cat).label)}${p.qty > 1 ? ` · ${short(p.unit)} × ${p.qty}` : ""} · ${esc(catOf(kind, cat).label)}`) : "Chọn danh mục bên dưới, hoặc chạm một khoản gần đây"}</span>`;
+    <span class="qa-sub">${typed ? (p.amount == null ? "Thêm số tiền, vd 55k" : `${esc(p.desc || catOf(kind, cat).label)}${p.qty > 1 ? ` · ${short(p.unit)} × ${p.qty}` : ""} · ${esc(catOf(kind, cat).label)}`) : ""}</span>`;
   const dates = [today(), yesterday()];
   const custom = !dates.includes(ui.qaDate);
   $("#qa-dates").innerHTML = `${dates.map(d => `<button type="button" class="chip ${ui.qaDate === d ? "on" : ""}" data-act="qa-date" data-d="${d}">${dayLabel(d)}</button>`).join("")}
@@ -1856,7 +1853,7 @@ function openBudgetSheet(catId, mParam) {
       <div class="field"><label for="bud-amt">Mỗi tháng</label><input id="bud-amt" inputmode="decimal" data-money value="${cur ? nf.format(cur) : ""}" placeholder="vd 2tr"></div>
       <div class="field"><label for="bud-from">Áp dụng từ</label><input id="bud-from" type="month" value="${m}"></div>
     </div>
-    <p class="note">Các tháng trước giữ ngân sách cũ. Để trống số tiền để bỏ ngân sách từ tháng đã chọn.${Array.isArray(b) && b.length ? ` Các mốc: ${stepsText(b, "amt", v => (v ? short(v) : "không đặt"))}.` : ""}</p>
+    <p class="note">Các tháng trước giữ nguyên. Để trống để bỏ ngân sách.${Array.isArray(b) && b.length ? ` Các mốc: ${stepsText(b, "amt", v => (v ? short(v) : "không đặt"))}.` : ""}</p>
     <button class="btn primary block" data-act="budget-save">Lưu</button>`, { cat: catId });
 }
 
@@ -1874,8 +1871,7 @@ function openCatSheet(kind) {
   openSheet(`${sheetHead("Danh mục")}
     <div class="seg"><button type="button" class="${kind === "out" ? "on" : ""}" data-act="cat-kind" data-kind="out">Khoản chi</button><button type="button" class="${kind === "in" ? "on" : ""}" data-act="cat-kind" data-kind="in">Khoản thu</button></div>
     <button class="btn primary block" data-act="cat-new" data-kind="${kind}" data-back="cats">+ Tạo danh mục ${kind === "in" ? "thu" : "chi"}</button>
-    <div class="card rows">${rows}</div>
-    <p class="note">Danh mục bị ẩn không hiện khi ghi, giao dịch cũ vẫn giữ nguyên.</p>`, { catKind: kind });
+    <div class="card rows">${rows}</div>`, { catKind: kind });
 }
 function openCatEdit(kind, id, back) {
   const c = id ? customCats(kind).find(x => x.id === id) : { label: "", icon: "tag", tint: "blue" };
@@ -1916,25 +1912,25 @@ function openSettings() {
     <div class="set-group"><span class="eyebrow">Sổ của bạn</span><div class="card rows">
       <div class="row"><span class="row-main"><span class="row-title">Bắt đầu từ</span><span class="row-meta">${mLabel(S.startMonth)} · số dư đầu ${money(S.openingBalance)}</span></span><button class="btn" data-act="edit-start">Sửa</button></div>
       <div class="row"><span class="row-main"><span class="row-title">Giao dịch</span><span class="row-meta">${allTx().length} khoản${months.length ? ` · ${mShort(months[0])} → ${mShort(months[months.length - 1])}` : ""}</span></span></div>
-      ${link("open-cats", "Danh mục", nCustom ? `${nCustom} danh mục tự tạo` : "Tạo danh mục riêng, ẩn danh mục không dùng")}
-      ${link("open-wallets", "Ví", hasWallets() ? `${S.wallets.length + 1} ví` : "Tách tiền mặt, ngân hàng, ví điện tử")}
+      ${link("open-cats", "Danh mục", nCustom ? `${nCustom} tự tạo` : "")}
+      ${link("open-wallets", "Ví", hasWallets() ? `${S.wallets.length + 1} ví` : "")}
     </div></div>
     <div class="set-group"><span class="eyebrow">Dùng hằng ngày</span><div class="card rows">
-      ${standalone() ? `<div class="row"><span class="row-main"><span class="row-title">Đã cài lên màn hình chính</span><span class="row-meta">Mở CashWatch như một app, dùng được cả khi mất mạng</span></span></div>` : link("install", "Cài lên màn hình chính", "Mở bằng một chạm như app, dùng được khi mất mạng")}
-      ${link("reminder", "Nhắc ghi chép mỗi tối", "Thêm lời nhắc vào lịch trên điện thoại")}
+      ${standalone() ? `<div class="row"><span class="row-main"><span class="row-title">Đã cài lên màn hình chính</span></span></div>` : link("install", "Cài lên màn hình chính", "Dùng được khi mất mạng")}
+      ${link("reminder", "Nhắc ghi chép mỗi tối", "")}
     </div></div>
     <div class="set-group"><span class="eyebrow">Sao lưu và chuyển máy</span><div class="card rows">
-      ${link("backup", "Tạo file sao lưu", S.lastBackup ? `Lần cuối ${new Date(S.lastBackup).toLocaleDateString("vi-VN")}. Gửi file sang máy khác để mở tiếp sổ.` : "Gửi file sang điện thoại hoặc máy tính khác để mở tiếp sổ")}
-      ${link("pick-json", "Khôi phục từ file sao lưu", "Mở sổ từ file .json đã tạo trên máy khác")}
+      ${link("backup", "Tạo file sao lưu", S.lastBackup ? `Lần cuối ${new Date(S.lastBackup).toLocaleDateString("vi-VN")}` : "Chưa sao lưu lần nào")}
+      ${link("pick-json", "Khôi phục từ file sao lưu", "")}
     </div></div>
     <div class="set-group"><span class="eyebrow">Excel</span><div class="card rows">
-      ${link("export", "Xuất file Excel", "Xem và lọc dữ liệu trong Excel, Google Sheets")}
+      ${link("export", "Xuất file Excel", "")}
       ${link("pick-file", "Nhập từ file Excel", "")}
       ${link("template", "Tải file Excel mẫu", "")}
     </div></div>
-    <p class="muted" style="margin:0;font-size:13px">${Store.mode === "cloud" ? "Sổ được lưu riêng theo tài khoản Claude của bạn, mở trên máy nào cũng thấy." : "Sổ chỉ lưu trên trình duyệt này, không gửi lên server nào. Xóa dữ liệu trình duyệt là mất sổ, nên hãy tạo file sao lưu định kỳ."}</p>
+    <p class="muted" style="margin:0;font-size:13px">${Store.mode === "cloud" ? "Sổ lưu riêng theo tài khoản Claude của bạn." : "Sổ chỉ lưu trên trình duyệt này. Hãy sao lưu định kỳ."}</p>
     <button class="btn danger block" data-act="wipe">Xóa toàn bộ dữ liệu</button>
-    <p class="note" style="text-align:center">CashWatch v${APPV} · Mẹo: trên máy tính bấm phím N để ghi nhanh</p>`, {});
+    <p class="note" style="text-align:center">CashWatch v${APPV} · Phím N: ghi nhanh</p>`, {});
 }
 
 /* ---------- Sao lưu và chuyển máy: một file .json chứa toàn bộ sổ, khôi phục y nguyên ---------- */
@@ -1971,7 +1967,7 @@ async function readBackup(file) {
       <span>Giao dịch</span><span class="v">${n} khoản</span>
       <span>Khoản cố định</span><span class="v">${(o.settings.recurring || []).length}</span>
     </div></div>
-    ${hasData ? `<p style="margin:0;font-size:13px;color:var(--warn)">Toàn bộ sổ đang có trên máy này sẽ được thay bằng sổ trong file.</p>` : ""}
+    ${hasData ? `<p style="margin:0;font-size:13px;color:var(--warn)">Sổ hiện có sẽ được thay bằng sổ trong file.</p>` : ""}
     <button class="btn primary block" data-act="restore-go">Khôi phục</button>`, { backup: o });
 }
 async function applyBackup(o) {
@@ -2000,16 +1996,15 @@ async function openInstall() {
       <li>Mở trang này bằng <b>Chrome</b> hoặc <b>Edge</b>.</li>
       <li>Bấm menu <b>⋮</b> ở góc trên.</li>
       <li>Chọn <b>Cài đặt ứng dụng</b> hoặc <b>Thêm vào màn hình chính</b>.</li></ol>`}
-    <p class="note">Sau khi cài, CashWatch mở như một app riêng và vẫn dùng được khi mất mạng. Sổ vẫn nằm trên máy này như trước.</p>
     <button class="btn primary block" data-act="sheet-close">Đã hiểu</button>`, {});
 }
 function openReminder() {
   openSheet(`${sheetHead("Nhắc ghi chép mỗi tối")}
-    <p class="muted" style="margin:0;font-size:14px">Thêm một lời nhắc lặp lại mỗi ngày vào lịch của điện thoại. Lời nhắc có sẵn link mở CashWatch.</p>
+    <p class="muted" style="margin:0;font-size:14px">Lời nhắc lặp lại mỗi ngày trong ứng dụng Lịch.</p>
     <div class="field"><label for="rm-time">Giờ nhắc</label><input id="rm-time" type="time" value="${S.remindAt || "21:00"}"></div>
     <a class="btn primary block" id="rm-google" target="_blank" rel="noopener" data-act="rm-google" href="#">Thêm vào Google Calendar</a>
     <button class="btn block" data-act="rm-ics">Tải file lịch (iPhone, Outlook)</button>
-    <p class="note">Trên iPhone, mở file vừa tải rồi bấm Thêm tất cả. Muốn tắt nhắc, xóa sự kiện trong ứng dụng Lịch.</p>`, {}, updateReminderLink);
+    <p class="note">iPhone: mở file vừa tải rồi bấm Thêm tất cả.</p>`, {}, updateReminderLink);
 }
 function reminderParts() {
   const [hh, mm] = (($("#rm-time") && $("#rm-time").value) || "21:00").split(":").map(Number);
@@ -2074,7 +2069,7 @@ function openTermSheet(i) {
       ${t.loanRows.map(r => `<span>Nợ ${esc(r.name.toLowerCase())} còn</span><span class="v">${money(r.debt)}</span>`).join("")}
     </div></div>
     ${started ? `<p class="note">Sổ thu chi ghi nhận ${money(saved)} để dành trong ${mShort(t.win[0])}→${mShort(t.win[t.win.length - 1])}${t.win[t.win.length - 1] > curMonth() ? " tính đến nay" : ""}, so với kế hoạch ${money(t.contrib)}.</p>` : ""}
-    <div class="field"><label for="term-rate">Lãi suất thực tế kỳ này (%/năm)</label><input id="term-rate" inputmode="decimal" value="${ov.rate != null ? fmtRate(ov.rate) : ""}" placeholder="Theo kế hoạch: ${fmtRate(planRate)}"><span class="help">Điền mức ngân hàng chốt khi gửi lại. Chỉ áp dụng cho kỳ này.</span></div>
+    <div class="field"><label for="term-rate">Lãi suất thực tế kỳ này (%/năm)</label><input id="term-rate" inputmode="decimal" value="${ov.rate != null ? fmtRate(ov.rate) : ""}" placeholder="Theo kế hoạch: ${fmtRate(planRate)}"><span class="help">Chỉ áp dụng cho kỳ này.</span></div>
     <div class="field"><label for="term-extra">Góp thêm tay kỳ này</label><input id="term-extra" inputmode="decimal" data-money value="${ov.extra ? (ov.extra < 0 ? "-" : "") + nf.format(Math.abs(ov.extra)) : ""}" placeholder="vd 10tr, hoặc -10tr nếu rút bớt"></div>
     ${g.loans.length ? `<div class="field"><label for="term-loan">Trả thêm gốc kỳ này</label><input id="term-loan" inputmode="decimal" data-money value="${ov.loanExtra ? nf.format(ov.loanExtra) : ""}" placeholder="vd 50tr"><span class="help">Trừ vào khoản vay đầu tiên còn nợ.</span></div>` : ""}
     <div class="field"><label for="term-actual">Số thực tế gửi lại sau đáo hạn</label><input id="term-actual" inputmode="decimal" data-money value="${ov.actual != null ? nf.format(ov.actual) : ""}" placeholder="Để trống nếu chưa tới kỳ"><span class="help">Khi điền, các kỳ sau tính tiếp từ số này.</span></div>
@@ -2102,7 +2097,7 @@ function openRateSheet() {
       </div>
       <p class="note">Các mốc hiện có: ${stepsText(L.rates, "rate", v => fmtRate(v) + "%")}</p>
     </fieldset>`).join("")}
-    <p class="note">Mức mới áp dụng từ mốc đã chọn về sau. Các kỳ trước giữ nguyên. Sửa hoặc xóa từng mốc trong “Sửa kế hoạch”.</p>
+    <p class="note">Áp dụng từ mốc đã chọn, các kỳ trước giữ nguyên.</p>
     <button class="btn primary block" data-act="rate-save">Lưu lãi suất</button>`, {});
 }
 
@@ -2132,7 +2127,6 @@ function openGoalSheet(draft) {
       </div>
     </fieldset>
     <fieldset><legend>Lãi gửi theo thời gian</legend>
-      <p class="note">Mỗi lần gửi lại dùng mức lãi của mốc gần nhất trước đó.</p>
       <div class="list-edit">${stepRows(d.rates, "g-rf", "g-rr", s => fmtRate(s.rate), "g-del-r", "", "%/năm")}</div>
       <button type="button" class="link" style="align-self:flex-start" data-act="g-add-r">+ Thêm mốc lãi</button>
     </fieldset>
@@ -2141,7 +2135,7 @@ function openGoalSheet(draft) {
       <button type="button" class="link" style="align-self:flex-start" data-act="g-add-m">+ Thêm mốc tăng/giảm</button>
     </fieldset>
     <fieldset><legend>Khoản thêm hằng năm</legend>
-      <p class="note">Thưởng Tết, lương tháng 13… cộng vào kỳ đáo hạn chứa tháng đó.</p>
+      <p class="note">Cộng vào kỳ đáo hạn chứa tháng đó.</p>
       <div class="list-edit">${d.yearly.map((y, k) => `<div class="line">
         <div class="field"><label for="g-ym-${k}">Tháng</label><select id="g-ym-${k}">${moyOpts(y.moy)}</select></div>
         <div class="field"><label for="g-ya-${k}">Số tiền</label><input id="g-ya-${k}" inputmode="decimal" data-money value="${nf.format(y.amt)}"></div>
@@ -2389,8 +2383,8 @@ function openImportPreview(res, name) {
     </div>
     ${res.recurring.length ? `<section class="section"><h2>${res.recFromSheet ? "" : "Nhận ra "}${res.recurring.length} khoản cố định</h2>
       <div class="card rows">${res.recurring.map(r => `<div class="row">${catAvatar(r.kind, r.cat)}<span class="row-main"><span class="row-title">${esc(r.name)}</span><span class="row-meta">${esc(catOf(r.kind, r.cat).label)}</span></span><span class="row-amt num ${r.kind === "in" ? "in" : ""}">${short(r.amt)}/tháng</span></div>`).join("")}</div></section>` : ""}
-    ${res.future.length ? `<p class="note">Bỏ qua ${res.future.length} dòng của các tháng chưa tới. Khoản cố định sẽ tự hiện ra để xác nhận khi tới tháng.</p>` : ""}
-    ${hasData ? `<p style="margin:0;font-size:13px;color:var(--warn)">Giao dịch, khoản cố định, ngân sách và chốt sổ hiện có sẽ được thay bằng dữ liệu từ file. Kế hoạch tiết kiệm giữ nguyên.</p>` : ""}
+    ${res.future.length ? `<p class="note">Bỏ qua ${res.future.length} dòng của các tháng chưa tới.</p>` : ""}
+    ${hasData ? `<p style="margin:0;font-size:13px;color:var(--warn)">Sổ hiện có sẽ được thay bằng dữ liệu trong file. Kế hoạch tiết kiệm giữ nguyên.</p>` : ""}
     <button class="btn primary block" data-act="import-go">Nhập dữ liệu</button>`, { res });
 }
 async function applyImport(res) {
@@ -2575,7 +2569,7 @@ document.addEventListener("click", async e => {
       if (st.fresh) { S = Object.assign(DEFAULTS(), { startMonth: m, openingBalance: bal }); M = {}; hasData = true; }
       else { S.startMonth = m; S.openingBalance = bal; }
       Store.touch("settings"); closeSheet(); render();
-      toast(st.fresh ? "Đã tạo sổ. Thêm khoản cố định ở tab Cố định." : "Đã lưu điểm bắt đầu"); break;
+      toast(st.fresh ? "Đã tạo sổ" : "Đã lưu điểm bắt đầu"); break;
     }
     case "go-close": ui.closeBack = ui.tab; ui.tab = "close"; ui.closeMonth = el.dataset.m; render(); window.scrollTo(0, 0); break;
     case "confirm-rec": {
@@ -2645,7 +2639,7 @@ document.addEventListener("click", async e => {
     case "rec-delete": {
       el.dataset.orig = "Xóa";
       if (!armDanger(el, "Bấm lần nữa để xóa")) break;
-      S.recurring = S.recurring.filter(r => r.id !== st.id); Store.touch("settings"); closeSheet(); render(); toast("Đã xóa khoản cố định. Giao dịch cũ vẫn giữ."); break;
+      S.recurring = S.recurring.filter(r => r.id !== st.id); Store.touch("settings"); closeSheet(); render(); toast("Đã xóa khoản cố định"); break;
     }
     case "close-month": ui.closeMonth = el.dataset.m; ui.tab = "close"; render(); break;
     case "close-adjust": {
@@ -2814,7 +2808,7 @@ document.addEventListener("click", async e => {
       S.recurring.forEach(r => { if ((r.kind === "in" ? "in" : "out") === k && r.cat === id) r.cat = "Other"; });
       if (k === "out") delete S.budgets[id];
       for (const key of Object.keys(S.learned)) if (S.learned[key] === id) delete S.learned[key];
-      Store.touch("settings"); render(); toast("Đã xóa danh mục. Các khoản cũ chuyển về Khác.");
+      Store.touch("settings"); render(); toast("Đã xóa. Các khoản cũ chuyển về Khác.");
       openCatSheet(k); break;
     }
     case "install": openInstall(); break;

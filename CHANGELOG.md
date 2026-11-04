@@ -3,35 +3,28 @@
 ## v0.3.0 · Danh mục riêng, nhiều ví, cài như app · 04/11/2026
 
 **Mới**
-- **Danh mục tự tạo:** đặt tên, chọn biểu tượng và màu. Tạo ngay trong ô ghi nhanh (ô "Thêm" cuối lưới danh mục) hoặc ở Cài đặt → Danh mục. Ẩn được danh mục có sẵn không dùng tới.
-- **Nhiều ví:** tách tiền mặt, ngân hàng, ví điện tử. Chạm ô "Tiền đang có" để xem số dư từng ví, thêm ví, chuyển tiền giữa các ví. Khi ghi giao dịch, chọn ví bằng một chạm. Chốt sổ nhập số thực tế theo từng ví.
-- **Cài lên màn hình chính (PWA):** mở như một app riêng, dùng được khi mất mạng. Giữ biểu tượng app để có lối tắt "Ghi giao dịch".
-- **Nhắc ghi chép mỗi tối:** thêm lời nhắc lặp lại hằng ngày vào Google Calendar hoặc ứng dụng Lịch trên iPhone.
-- **Sao lưu và chuyển máy:** tạo một file sao lưu chứa toàn bộ sổ. Trên điện thoại, file được gửi thẳng qua Zalo, AirDrop, email. Trên máy mới, chọn "Đã dùng CashWatch trên máy khác?" để khôi phục y nguyên.
+- **Danh mục tự tạo:** đặt tên, biểu tượng, màu. Tạo ngay trong ô ghi nhanh (ô "Thêm") hoặc ở Cài đặt → Danh mục. Ẩn được danh mục có sẵn.
+- **Nhiều ví:** chạm ô "Tiền đang có" để xem số dư từng ví, thêm ví, chuyển tiền giữa các ví. Chọn ví khi ghi giao dịch. Chốt sổ theo từng ví.
+- **Cài lên màn hình chính (PWA):** mở như app riêng, dùng được khi mất mạng, có lối tắt "Ghi giao dịch".
+- **Nhắc ghi chép mỗi tối** qua Google Calendar hoặc ứng dụng Lịch trên iPhone.
+- **Sao lưu và chuyển máy:** một file chứa toàn bộ sổ, gửi qua Zalo, AirDrop, email; khôi phục y nguyên trên máy khác.
 
 **Đổi**
-- Trang Cài đặt sắp lại thành các nhóm: Sổ của bạn, Dùng hằng ngày, Sao lưu và chuyển máy, Excel.
-- File Excel có thêm cột Ví và sheet Ví. Tên danh mục lạ trong file được tạo thành danh mục mới thay vì gộp vào "Khác".
-- Thẻ nhắc sao lưu trên Tổng quan dùng file sao lưu thay cho Excel.
-- Ô nhập khoản cố định lúc thiết lập cũng hiện số đầy đủ (gõ `4tr` thấy `= 4.000.000 ₫`).
-- Tháng bắt đầu giữa chừng ghi rõ "Đầu tháng (tính ngược)".
+- Thanh tab: Tổng quan · Giao dịch · Ngân sách · Kế hoạch. Kế hoạch gồm Khoản cố định và Mục tiêu tiết kiệm.
+- Chốt sổ mở từ màn Giao dịch, màn Tiền đang có, hoặc thẻ nhắc trên Tổng quan (tháng trước chưa chốt, 3 ngày cuối tháng).
+- Thông báo hiện ở dưới, gần ngón cái; trong ô ghi nhanh không còn che nút Xong.
+- Biểu đồ thu chi chỉ hiện khi có từ 2 tháng dữ liệu.
+- Số 0 hiện là "0" thay vì "+0", "−0".
+- Rút gọn chữ trên toàn app: bỏ các dòng giải thích lặp lại điều đã rõ trên màn hình.
+- Trang Cài đặt chia nhóm: Sổ của bạn, Dùng hằng ngày, Sao lưu và chuyển máy, Excel.
+- Excel có thêm cột và sheet Ví; tên danh mục lạ được tạo thành danh mục mới.
+- Gợi ý "Ghi lại khoản gần đây" không lặp lại khoản cố định.
 
 **Sửa**
-- Lúc thiết lập, nếu tiền đang có ít hơn số tính ra từ lương và khoản đã trả, phần chênh lệch được ghi thành một dòng điều chỉnh "Đã chi trước khi ghi sổ", không còn số dư đầu tháng bị âm.
-- Xuất rồi nhập lại Excel giữ đúng số "Còn tiêu được" của tháng bắt đầu giữa chừng.
-
-## v0.2.1 · Dễ hiểu hơn ngay từ ngày đầu · 04/11/2026
-
-**Đổi**
-- Thanh tab mới: Tổng quan · Giao dịch · Ngân sách · Kế hoạch. Ngân sách có tab riêng; Kế hoạch gồm Khoản cố định và Mục tiêu tiết kiệm.
-- Chốt sổ không còn chiếm một tab. Mở từ nút "Chốt sổ" trong màn Giao dịch, từ ô "Tiền đang có", hoặc từ thẻ nhắc trên Tổng quan (khi tháng trước chưa chốt và 3 ngày cuối tháng).
-- Thông báo hiện ở dưới, ngay trên thanh tab, gần ngón cái. Trong ô ghi nhanh, thông báo nằm trên nút Ghi và không che nút Xong.
-- Biểu đồ thu chi chỉ hiện khi đã có từ 2 tháng dữ liệu.
-- Số 0 hiện là "0" thay vì "+0", "−0" hay "+0 ₫".
-- Gợi ý "Ghi lại khoản gần đây" không còn lặp lại khoản cố định.
-
-**Sửa**
-- Lúc thiết lập, khoản thu nhập và khoản cố định chọn "Tháng này đã nhận/đã trả" giờ được ghi thành giao dịch, nên Thu, Chi tiêu và Để dành hiện đúng ngay. Trước đây các khoản này bị ẩn và mọi số đều là 0.
+- Thiết lập: khoản lương và khoản cố định "đã nhận/đã trả" được ghi thành giao dịch, nên Thu, Chi, Để dành hiện đúng ngay.
+- Thiết lập: nếu tiền đang có ít hơn số tính ra, phần chênh lệch thành dòng "Đã chi trước khi ghi sổ" thay vì số dư đầu tháng âm.
+- Xuất rồi nhập lại Excel giữ đúng "Còn tiêu được" của tháng bắt đầu giữa chừng.
+- Ô khoản cố định lúc thiết lập hiện số đầy đủ khi gõ tắt.
 
 ## v0.2.0 · Ghi nhanh trong 1 phút · 03/11/2026
 
