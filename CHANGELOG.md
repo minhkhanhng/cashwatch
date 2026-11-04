@@ -12,7 +12,7 @@
 - **Cài lên màn hình chính (PWA):** mở như app riêng, dùng được khi mất mạng, có lối tắt "Ghi giao dịch".
 - **Nhắc ghi chép mỗi tối** qua Google Calendar hoặc ứng dụng Lịch trên iPhone.
 - **Đăng nhập bằng email và đồng bộ** (cần bật Supabase, xem `docs/dong-bo-supabase.md`):
-  - đăng nhập bằng mã 6 số gửi qua email, không cần mật khẩu;
+  - đăng nhập bằng Google, hoặc bằng link gửi qua email; không cần mật khẩu;
   - sổ lưu trên máy trước rồi tự đẩy lên tài khoản, tự tải bản mới khi mở hoặc quay lại app, dùng được khi mất mạng;
   - hai máy cùng sửa thì gộp giao dịch; máy đã có sổ riêng khi đăng nhập được chọn dùng sổ tài khoản hoặc gộp hai sổ;
   - trạng thái "Đã đồng bộ / Đang đồng bộ / Chưa đồng bộ" trên đầu trang.

@@ -382,6 +382,10 @@ details.info p { margin: 6px 0 0; line-height: 1.6; }
 .bar > i.pos { background: var(--chart-in); }
 .bar > i.warn { background: var(--warn); }
 .w-chip svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+.btn-google { background: #FFFFFF; color: #1F1F1F; border-color: #747775; gap: 10px; }
+.btn-google svg { width: 20px; height: 20px; flex: none; }
+.or { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 13px; }
+.or::before, .or::after { content: ""; flex: 1; height: 1px; background: var(--line); }
 .steps-list { margin: 0; padding-left: 22px; display: flex; flex-direction: column; gap: 8px; font-size: 15px; }
 a.btn { display: block; text-decoration: none; text-align: center; color: inherit; }
 a.btn.primary { color: var(--accent-ink); }
@@ -977,6 +981,8 @@ const Sync = {
   },
   async init() {
     if (!this.ready()) return;
+    const back = new URLSearchParams((location.hash || "").replace(/^#/, "") || location.search);
+    const urlErr = back.get("error_description") || back.get("error");
     try {
       const c = await this.lib();
       const { data } = await c.auth.getSession();
@@ -985,6 +991,7 @@ const Sync = {
       if (this.user && m.uid === this.user.id) { this.rev = m.rev || 0; this.at = m.at || 0; this.dirty = !!m.dirty; }
       c.auth.onAuthStateChange((ev, session) => { this.user = session ? session.user : null; if (ev === "SIGNED_OUT") this.setState("off"); });
       if (this.user) { if (m.uid === this.user.id) await this.pull(); else await this.firstLink(await this.fetchRow()); }
+      if (urlErr) { history.replaceState(null, "", location.pathname); toast(/expired|invalid/i.test(urlErr) ? "Link đăng nhập đã hết hạn, hãy gửi lại" : "Chưa đăng nhập được, thử lại"); }
       document.addEventListener("visibilitychange", () => { if (!document.hidden && this.user) this.pull(); });
       window.addEventListener("online", () => { if (this.user) (this.dirty ? this.push() : this.pull()); });
     } catch (e) { this.setState("error", "Không kết nối được máy chủ đồng bộ"); }
@@ -1054,6 +1061,11 @@ const Sync = {
       this.dirty = false; this.at = Date.now(); this.saveMeta(); this.setState("ok");
     } catch (e) { this.setState("error", "Chưa đồng bộ được, sẽ thử lại khi có mạng"); }
     this.busy = false;
+  },
+  async google() {
+    const c = await this.lib();
+    const { error } = await c.auth.signInWithOAuth({ provider: "google", options: { redirectTo: location.origin + location.pathname, queryParams: { prompt: "select_account" } } });
+    if (error) throw error; // thành công thì trình duyệt chuyển sang trang Google
   },
   async sendCode(email) {
     const c = await this.lib();
@@ -2272,7 +2284,7 @@ function openSettings() {
   const syncGroup = !Sync.ready() ? "" : `<div class="set-group"><span class="eyebrow">Tài khoản và đồng bộ</span><div class="card rows">
       ${Sync.user ? `<div class="row"><span class="avatar t-blue" aria-hidden="true"><svg viewBox="0 0 24 24">${ICON.phone}</svg></span><span class="row-main"><span class="row-title">${esc(Sync.user.email || "Đã đăng nhập")}</span><span class="row-meta">${Sync.state === "error" ? esc(Sync.error) : Sync.at ? "Đồng bộ lúc " + new Date(Sync.at).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" }) : "Đang đồng bộ…"}</span></span></div>
       <div class="row" style="gap:8px"><button class="btn" style="flex:1" data-act="sync-now">Đồng bộ ngay</button><button class="btn" style="flex:1" data-act="sync-logout">Đăng xuất</button></div>`
-      : link("sync-login", "Đăng nhập bằng email", "Lưu sổ vào tài khoản, mở trên máy nào cũng thấy")}
+      : link("sync-login", "Đăng nhập Google hoặc email", "Lưu sổ vào tài khoản, mở trên máy nào cũng thấy")}
     </div></div>`;
   openSheet(`${sheetHead("Cài đặt")}
     ${syncGroup}
@@ -2301,16 +2313,23 @@ function openSettings() {
 }
 
 /* ---------- Đăng nhập bằng mã gửi qua email ---------- */
+const GOOGLE_G = '<svg viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.8 2.4 30.3 0 24 0 14.6 0 6.6 5.4 2.7 13.3l7.9 6.1C12.5 13.6 17.8 9.5 24 9.5z"/><path fill="#4285F4" d="M46.1 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.4c-.5 2.9-2.2 5.3-4.6 6.9l7.4 5.7c4.3-4 6.9-9.9 6.9-17.1z"/><path fill="#FBBC05" d="M10.6 28.6c-.5-1.4-.8-2.9-.8-4.6s.3-3.2.8-4.6l-7.9-6.1C1 16.6 0 20.2 0 24s1 7.4 2.7 10.7l7.9-6.1z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.4-5.7c-2.1 1.4-4.8 2.2-8.5 2.2-6.2 0-11.5-4.1-13.4-9.8l-7.9 6.1C6.6 42.6 14.6 48 24 48z"/></svg>';
 function openLogin(email) {
   const step2 = !!email;
-  openSheet(`${sheetHead("Đăng nhập bằng email")}
-    ${step2 ? `<p class="muted" style="margin:0;font-size:14px">Mã đã gửi tới <b>${esc(email)}</b>. Mở email và nhập mã ở đây. Không thấy thì xem thư mục Spam.</p>
-      <div class="field"><label for="lg-code">Mã đăng nhập</label><input id="lg-code" inputmode="numeric" autocomplete="one-time-code" maxlength="10" placeholder="6 chữ số" style="letter-spacing:.3em;font-size:22px;text-align:center"></div>
-      <button class="btn primary block" data-act="lg-verify">Đăng nhập</button>
-      <button class="btn ghost block" data-act="lg-back">Đổi email hoặc gửi lại mã</button>`
-    : `<p class="muted" style="margin:0;font-size:14px">Sổ được lưu vào tài khoản để mở trên điện thoại, máy tính đều thấy. Không cần mật khẩu.</p>
-      <div class="field"><label for="lg-email">Email</label><input id="lg-email" type="email" inputmode="email" autocomplete="email" placeholder="ban@gmail.com"></div>
-      <button class="btn primary block" data-act="lg-send">Gửi mã đăng nhập</button>`}`, { email });
+  openSheet(`${sheetHead("Đăng nhập")}
+    ${step2 ? `<p style="margin:0;font-size:15px">Đã gửi link đăng nhập tới <b>${esc(email)}</b>.</p>
+      <ol class="steps-list"><li>Mở email <b>trên chính máy này</b>.</li><li>Bấm nút đăng nhập trong thư.</li><li>CashWatch tự mở lại và đồng bộ sổ.</li></ol>
+      <p class="note">Không thấy thư thì xem mục Spam hoặc Quảng cáo.</p>
+      <details class="info"><summary>Email có mã số?</summary>
+        <div class="field" style="margin-top:10px"><label for="lg-code">Mã đăng nhập</label><input id="lg-code" inputmode="numeric" autocomplete="one-time-code" maxlength="10" placeholder="Nhập mã trong email" style="letter-spacing:.2em;text-align:center"></div>
+        <button class="btn block" style="margin-top:10px" data-act="lg-verify">Đăng nhập bằng mã</button>
+      </details>
+      <button class="btn ghost block" data-act="lg-back">Đổi email hoặc gửi lại</button>`
+    : `<p class="muted" style="margin:0;font-size:14px">Lưu sổ vào tài khoản để mở trên điện thoại, máy tính đều thấy.</p>
+      <button class="btn block btn-google" data-act="lg-google">${GOOGLE_G}Tiếp tục với Google</button>
+      <div class="or"><span>hoặc dùng email khác</span></div>
+      <div class="field"><label for="lg-email">Email</label><input id="lg-email" type="email" inputmode="email" autocomplete="email" placeholder="ban@email.com"></div>
+      <button class="btn primary block" data-act="lg-send">Gửi link đăng nhập</button>`}`, { email });
 }
 
 /* ---------- Sao lưu và chuyển máy: một file .json chứa toàn bộ sổ, khôi phục y nguyên ---------- */
@@ -3211,12 +3230,18 @@ document.addEventListener("click", async e => {
     case "lg-wallet-clear": ui.lgWallet = null; render(); break;
     case "sync-login": openLogin(null); break;
     case "lg-back": openLogin(null); if (st && st.email) $("#lg-email").value = st.email; break;
+    case "lg-google": {
+      el.disabled = true; el.lastChild.textContent = "Đang mở Google…";
+      try { await Sync.google(); }
+      catch (e) { el.disabled = false; el.lastChild.textContent = "Tiếp tục với Google"; toast(e && e.message === "load" ? "Không kết nối được, kiểm tra mạng" : "Chưa mở được đăng nhập Google, thử lại"); }
+      break;
+    }
     case "lg-send": {
       const email = $("#lg-email").value.trim();
       if (!/^\S+@\S+\.\S+$/.test(email)) { toast("Nhập đúng địa chỉ email"); $("#lg-email").focus(); break; }
       el.disabled = true; el.textContent = "Đang gửi…";
-      try { await Sync.sendCode(email); openLogin(email); $("#lg-code").focus(); }
-      catch (e) { el.disabled = false; el.textContent = "Gửi mã đăng nhập"; toast(e && e.status === 429 ? "Gửi quá nhiều lần, thử lại sau ít phút" : e && e.message === "load" ? "Không kết nối được, kiểm tra mạng" : "Chưa gửi được mã, thử lại"); }
+      try { await Sync.sendCode(email); openLogin(email); }
+      catch (e) { el.disabled = false; el.textContent = "Gửi link đăng nhập"; toast(e && e.status === 429 ? "Gửi quá nhiều lần, thử lại sau ít phút" : e && e.message === "load" ? "Không kết nối được, kiểm tra mạng" : "Chưa gửi được mã, thử lại"); }
       break;
     }
     case "lg-verify": {
