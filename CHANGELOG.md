@@ -27,6 +27,8 @@
 - Xuất rồi nhập lại Excel giữ đúng "Còn tiêu được" của tháng bắt đầu giữa chừng.
 - Ô khoản cố định lúc thiết lập hiện số đầy đủ khi gõ tắt.
 - Dòng điều chỉnh số dư không còn bị tính vào chi tiêu theo danh mục.
+- Thanh tab: nút + nằm gọn trong thanh và cùng đường tâm với các nút khác, các cột cách đều, nhãn không dính nhau ở màn hẹp.
+- Màn hẹp (320px): số tiền không còn bị bẻ giữa chừng, tiêu đề dài xuống tối đa 2 dòng thay vì bị cắt.
 
 ## v0.2.0 · Ghi nhanh trong 1 phút · 03/11/2026
 

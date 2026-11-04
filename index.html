@@ -162,7 +162,9 @@ h2 { font-size: 18px; }
 .row:first-child { border-top: 0; }
 button.row:hover { background: var(--surface-2); }
 .row-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
-.row-title { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Tiêu đề dòng: tối đa 2 dòng rồi mới cắt, không cắt cụt ở màn hẹp */
+.row-title { font-weight: 500; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow-wrap: anywhere; line-height: 1.35; }
+.row-title.cat-title { display: inline-flex; }
 .row-meta { font-size: 13px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 4px 8px; }
 .row-amt { font-variant-numeric: tabular-nums; font-weight: 600; white-space: nowrap; }
 .row-amt.in { color: var(--pos); }
@@ -209,11 +211,13 @@ button.row:hover { background: var(--surface-2); }
 
 /* Tab bar */
 .tabs { position: fixed; left: 0; right: 0; bottom: 0; z-index: 7; background: var(--surface); border-top: 1px solid var(--card-border); box-shadow: 0 -6px 24px rgba(0, 31, 63, .06); padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-area-inset-right, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
-.tabs-inner { max-width: 520px; margin: 0 auto; display: grid; grid-template-columns: repeat(5, 1fr); }
-.tab { background: none; border: 0; padding: 8px 2px 10px; display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 12px; font-weight: 500; color: var(--muted); }
-.tab svg { width: 22px; height: 22px; padding: 4px 16px; box-sizing: content-box; border-radius: 999px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; transition: background-color .15s; }
+/* Thanh tab: 5 cột bằng nhau, chừa lề 8px hai bên; mọi nút cùng một đường tâm dọc */
+.tabs-inner { max-width: 520px; margin: 0 auto; padding: 0 8px; height: 68px; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); align-items: center; }
+.tab { background: none; border: 0; height: 100%; padding: 0 2px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; font-size: clamp(10.5px, 3.1vw, 11.5px); font-weight: 600; color: var(--muted); white-space: nowrap; min-width: 0; }
+@media (max-width: 359px) { .tabs-inner { padding: 0 2px; } .tab svg { padding: 4px 10px; } }
+.tab svg { width: 22px; height: 22px; padding: 4px 14px; box-sizing: content-box; border-radius: 999px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; transition: background-color .15s; }
 /* Tab đang mở: nền xanh chanh sau biểu tượng + chữ đậm (không chỉ dựa vào màu) */
-.tab[aria-current="page"] { color: var(--ink); font-weight: 700; }
+.tab[aria-current="page"] { color: var(--ink); }
 .tab[aria-current="page"] svg { background: var(--lime); color: var(--lime-ink); }
 
 /* Month view */
@@ -248,14 +252,15 @@ button.row:hover { background: var(--surface-2); }
 
 /* Overview */
 .worth .tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
-.tile { border: 1px solid rgba(246, 247, 237, .16); background: rgba(246, 247, 237, .08); color: inherit; border-radius: 16px; padding: 12px; display: flex; flex-direction: column; gap: 4px; justify-content: space-between; text-align: left; min-width: 0; }
-.tile-label { font-size: 12.5px; color: var(--muted); line-height: 1.25; }
-.tile-v { font-family: var(--font-display); font-weight: 700; font-size: 17px; overflow-wrap: anywhere; }
+.tile { border: 1px solid rgba(246, 247, 237, .16); background: rgba(246, 247, 237, .08); color: inherit; border-radius: 16px; padding: 12px clamp(8px, 3vw, 12px); display: flex; flex-direction: column; gap: 4px; justify-content: space-between; text-align: left; min-width: 0; }
+.tile-label { font-size: 12.5px; color: var(--muted); line-height: 1.25; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* Số không bao giờ bị bẻ giữa chừng; cỡ chữ co theo bề rộng màn */
+.tile-v { font-family: var(--font-display); font-weight: 700; font-size: clamp(14px, 4.4vw, 17px); white-space: nowrap; }
 .neg-t { color: var(--neg); }
 .month-card { display: flex; flex-direction: column; gap: 12px; }
 .safe-line { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 0 16px; }
 .safe-line > div { display: flex; flex-direction: column; }
-.safe-line b { font-family: var(--font-display); font-size: 30px; letter-spacing: -.02em; line-height: 1.15; }
+.safe-line b { font-family: var(--font-display); font-size: clamp(24px, 7.6vw, 30px); letter-spacing: -.02em; line-height: 1.15; white-space: nowrap; }
 .safe-line .muted { font-size: 13px; }
 .trio { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-top: 1px solid var(--line); }
 .trio > div { padding: 12px 16px 14px; display: flex; flex-direction: column; gap: 2px; font-size: 12.5px; color: var(--muted); }
@@ -282,9 +287,10 @@ button.row:hover { background: var(--surface-2); }
 .cat-scroll { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: none; }
 .cat-scroll .chip { padding: 7px 14px; }
 .qa-big { border: 1px solid var(--line-strong); background: var(--surface); color: var(--ink); border-radius: 18px; padding: 15px 16px; font-size: 20px; width: 100%; }
-.tab.fab { padding-top: 0; }
+.tab.fab { padding: 0; }
 /* Nút + : tròn xanh chanh, viền navy mảnh để nổi trên nền trắng (đồ họa ≥ 3:1) */
-.fab-btn { width: 56px; height: 56px; border-radius: 50%; background: var(--lime); color: var(--lime-ink); border: 2px solid var(--lime-ink); display: grid; place-items: center; margin-top: -18px; box-shadow: 0 6px 18px rgba(0, 31, 63, .22); }
+.fab-btn { width: 52px; height: 52px; border-radius: 50%; background: var(--lime); color: var(--lime-ink); border: 2px solid var(--lime-ink); display: grid; place-items: center; box-shadow: 0 4px 14px rgba(0, 31, 63, .2); }
+.tab.fab .fab-btn svg { padding: 0; background: none; }
 .fab-btn svg { width: 26px; height: 26px; stroke-width: 2.2; }
 
 /* Quick add */
@@ -304,7 +310,7 @@ button.row:hover { background: var(--surface-2); }
 #qa-recent { display: flex; flex-direction: column; gap: 6px; }
 .cat-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
 .cat-btn { border: 1.5px solid transparent; background: none; border-radius: 16px; padding: 8px 2px; color: inherit; display: flex; flex-direction: column; align-items: center; gap: 5px; font-size: 12px; line-height: 1.2; color: var(--ink); min-width: 0; }
-.cat-btn span:last-child { overflow: hidden; text-overflow: ellipsis; max-width: 100%; white-space: nowrap; }
+.cat-btn span:last-child { overflow: hidden; max-width: 100%; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; text-align: center; line-height: 1.25; }
 .cat-btn:hover { background: var(--surface-2); }
 .cat-btn.on { border-color: var(--accent); background: var(--accent-soft); font-weight: 600; }
 .cat-btn .avatar { width: 44px; height: 44px; border-radius: 14px; }
@@ -325,7 +331,7 @@ details.info p { margin: 6px 0 0; line-height: 1.6; }
 .money-hint:empty { display: none; }
 .money-hint.bad { color: var(--neg); }
 .setup-fixed .row { cursor: text; }
-.setup-fixed input { width: 120px; flex: none; border: 1px solid var(--line-strong); background: var(--surface-2); color: var(--ink); border-radius: 12px; padding: 9px 10px; font-size: 16px; text-align: right; }
+.setup-fixed input { width: clamp(96px, 32%, 128px); flex: none; border: 1px solid var(--line-strong); background: var(--surface-2); color: var(--ink); border-radius: 12px; padding: 9px 10px; font-size: 16px; text-align: right; }
 .setup-fixed .row { flex-wrap: wrap; }
 .icon-grid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; }
 .icon-pick { aspect-ratio: 1; border: 1px solid var(--line-strong); border-radius: 14px; background: var(--surface); color: var(--ink); display: grid; place-items: center; padding: 0; }
@@ -1077,7 +1083,7 @@ function backupCard() {
   if (n < 5 || Date.now() - last < 30 * 864e5) return "";
   return `<div class="card"><div class="row">
     ${catAvatar("out", "Savings")}
-    <span class="row-main"><span class="row-title">Sao lưu sổ của bạn</span><span class="row-meta">${last ? `Lần cuối ${new Date(last).toLocaleDateString("vi-VN")}.` : "Chưa sao lưu lần nào."} Dữ liệu chỉ nằm trong trình duyệt này.</span></span>
+    <span class="row-main"><span class="row-title">Sao lưu sổ của bạn</span><span class="row-meta">${last ? `Lần cuối ${new Date(last).toLocaleDateString("vi-VN")}` : "Chưa sao lưu lần nào"}</span></span>
     <button class="btn primary" data-act="backup">Sao lưu</button>
   </div></div>`;
 }
@@ -1135,7 +1141,7 @@ function renderHome() {
       <div class="eyebrow-row"><span class="eyebrow">Tài sản ròng</span><details class="info"><summary>Là gì?</summary><p>Tiền đang có cộng tiền để dành, trừ nợ.</p></details></div>
       <div class="hero-num ${w.net < 0 ? "neg" : ""}">${w.net < 0 ? "−" : ""}${nf.format(Math.round(Math.abs(w.net)))}<span class="cur">₫</span></div>
       <div class="tiles">
-        <button class="tile" data-act="tab" data-tab="wallets"><span class="tile-label">Tiền đang có</span><span class="tile-v num">${short(w.cash)}</span></button>
+        <button class="tile" data-act="tab" data-tab="wallets"><span class="tile-label">Đang có</span><span class="tile-v num">${short(w.cash)}</span></button>
         <button class="tile" data-act="plan-seg" data-seg="goal"><span class="tile-label">Để dành</span><span class="tile-v num">${short(w.saved)}</span></button>
         <button class="tile" data-act="plan-seg" data-seg="goal"><span class="tile-label">Nợ còn</span><span class="tile-v num ${w.debt > 0 ? "neg-t" : ""}">${w.debt > 0 ? "−" + short(w.debt) : "0"}</span></button>
       </div>
@@ -1730,7 +1736,7 @@ function saveSetup(st) {
 const PLAN_TABS = ["fixed", "goal"];
 function render() {
   const ready = Store.mode !== "loading";
-  $("#store-label").textContent = !ready ? "Đang mở sổ…" : Store.mode === "cloud" ? "Sổ riêng của bạn" : "Lưu trên trình duyệt này";
+  $("#store-label").textContent = !ready ? "Đang mở sổ…" : Store.mode === "cloud" ? "Sổ riêng" : "Trên máy này";
   const showApp = ready && hasData;
   $("#tabs").hidden = !showApp;
   if (!ready) return;
