@@ -10,6 +10,7 @@
 - **Sao lưu và chuyển máy:** một file chứa toàn bộ sổ, gửi qua Zalo, AirDrop, email; khôi phục y nguyên trên máy khác.
 
 **Đổi**
+- **Giao diện mới** theo bảng màu MP076 (navy Midnight Mirage, xanh chanh First Colors of Spring, trắng ngà Praxeti, xanh Nuit Blanche, xanh lá Picture Book Green). Nền trời xanh nhạt, thẻ bo tròn lớn, nút và chip dạng viên thuốc, thẻ Tài sản ròng nền navy, thẻ Mục tiêu nền xanh chanh, nút + tròn xanh chanh, tab đang mở có nền xanh chanh sau biểu tượng. Mọi cặp chữ/nền đạt WCAG AA (≥ 4.5:1) ở cả nền sáng và tối. Biểu tượng app đổi theo màu mới.
 - Thanh tab: Tổng quan · Giao dịch · Ngân sách · Kế hoạch. Kế hoạch gồm Khoản cố định và Mục tiêu tiết kiệm.
 - Chốt sổ mở từ màn Giao dịch, màn Tiền đang có, hoặc thẻ nhắc trên Tổng quan (tháng trước chưa chốt, 3 ngày cuối tháng).
 - Thông báo hiện ở dưới, gần ngón cái; trong ô ghi nhanh không còn che nút Xong.
@@ -25,6 +26,7 @@
 - Thiết lập: nếu tiền đang có ít hơn số tính ra, phần chênh lệch thành dòng "Đã chi trước khi ghi sổ" thay vì số dư đầu tháng âm.
 - Xuất rồi nhập lại Excel giữ đúng "Còn tiêu được" của tháng bắt đầu giữa chừng.
 - Ô khoản cố định lúc thiết lập hiện số đầy đủ khi gõ tắt.
+- Dòng điều chỉnh số dư không còn bị tính vào chi tiêu theo danh mục.
 
 ## v0.2.0 · Ghi nhanh trong 1 phút · 03/11/2026
 

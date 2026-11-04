@@ -1,5 +1,5 @@
 /* CashWatch service worker: mở được khi mất mạng. Dữ liệu sổ vẫn chỉ nằm trong trình duyệt, file này chỉ lưu giao diện. */
-const VERSION = "cashwatch-0.3.0";
+const VERSION = "cashwatch-0.3.0-b";
 const CORE = ["./", "./index.html", "./manifest.webmanifest", "./icons/icon-192.png", "./icons/icon-512.png"];
 
 self.addEventListener("install", e => {
