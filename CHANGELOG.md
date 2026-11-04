@@ -1,5 +1,25 @@
 # Nhật ký thay đổi
 
+## v0.3.0 · Danh mục riêng, nhiều ví, cài như app · 04/11/2026
+
+**Mới**
+- **Danh mục tự tạo:** đặt tên, chọn biểu tượng và màu. Tạo ngay trong ô ghi nhanh (ô "Thêm" cuối lưới danh mục) hoặc ở Cài đặt → Danh mục. Ẩn được danh mục có sẵn không dùng tới.
+- **Nhiều ví:** tách tiền mặt, ngân hàng, ví điện tử. Chạm ô "Tiền đang có" để xem số dư từng ví, thêm ví, chuyển tiền giữa các ví. Khi ghi giao dịch, chọn ví bằng một chạm. Chốt sổ nhập số thực tế theo từng ví.
+- **Cài lên màn hình chính (PWA):** mở như một app riêng, dùng được khi mất mạng. Giữ biểu tượng app để có lối tắt "Ghi giao dịch".
+- **Nhắc ghi chép mỗi tối:** thêm lời nhắc lặp lại hằng ngày vào Google Calendar hoặc ứng dụng Lịch trên iPhone.
+- **Sao lưu và chuyển máy:** tạo một file sao lưu chứa toàn bộ sổ. Trên điện thoại, file được gửi thẳng qua Zalo, AirDrop, email. Trên máy mới, chọn "Đã dùng CashWatch trên máy khác?" để khôi phục y nguyên.
+
+**Đổi**
+- Trang Cài đặt sắp lại thành các nhóm: Sổ của bạn, Dùng hằng ngày, Sao lưu và chuyển máy, Excel.
+- File Excel có thêm cột Ví và sheet Ví. Tên danh mục lạ trong file được tạo thành danh mục mới thay vì gộp vào "Khác".
+- Thẻ nhắc sao lưu trên Tổng quan dùng file sao lưu thay cho Excel.
+- Ô nhập khoản cố định lúc thiết lập cũng hiện số đầy đủ (gõ `4tr` thấy `= 4.000.000 ₫`).
+- Tháng bắt đầu giữa chừng ghi rõ "Đầu tháng (tính ngược)".
+
+**Sửa**
+- Lúc thiết lập, nếu tiền đang có ít hơn số tính ra từ lương và khoản đã trả, phần chênh lệch được ghi thành một dòng điều chỉnh "Đã chi trước khi ghi sổ", không còn số dư đầu tháng bị âm.
+- Xuất rồi nhập lại Excel giữ đúng số "Còn tiêu được" của tháng bắt đầu giữa chừng.
+
 ## v0.2.1 · Dễ hiểu hơn ngay từ ngày đầu · 04/11/2026
 
 **Đổi**

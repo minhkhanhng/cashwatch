@@ -1,6 +1,11 @@
 <!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="description" content="Sổ thu chi cá nhân: ghi nhanh một dòng, khoản cố định, số còn tiêu được, chốt sổ và kế hoạch tiết kiệm trả nợ. Dữ liệu lưu trên trình duyệt."><meta name="theme-color" content="#3B37B3"><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%278%27 fill=%27%233B37B3%27/%3E%3Cpath d=%27M9 16h14M16 9v14%27 stroke=%27white%27 stroke-width=%273%27 stroke-linecap=%27round%27/%3E%3C/svg%3E"><style>:root{color-scheme:light;padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}body{margin:0;font:14px system-ui,-apple-system,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
 <title>CashWatch</title>
 <meta name="claude:viewport-fit-sides" content="cover">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="CashWatch">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600&family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&display=swap">
@@ -267,7 +272,27 @@ details.info p { margin: 6px 0 0; line-height: 1.6; }
 .money-hint.bad { color: var(--neg); }
 .setup-fixed .row { cursor: text; }
 .setup-fixed input { width: 120px; flex: none; border: 1px solid var(--line); background: var(--bg); border-radius: 10px; padding: 9px 10px; font-size: 16px; text-align: right; }
-.setup-fixed .money-hint { display: none; }
+.setup-fixed .row { flex-wrap: wrap; }
+.icon-grid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; }
+.icon-pick { aspect-ratio: 1; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); color: var(--ink); display: grid; place-items: center; padding: 0; }
+.icon-pick svg { width: 21px; height: 21px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.icon-pick.on { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
+.tint-row { display: flex; gap: 10px; flex-wrap: wrap; }
+.tint-pick { width: 38px; height: 38px; border-radius: 50%; border: 0; padding: 0; }
+.tint-pick::after { content: ""; width: 16px; height: 16px; border-radius: 50%; background: currentColor; }
+.tint-pick.on { outline: 2px solid var(--accent); outline-offset: 2px; }
+.cat-preview { display: flex; align-items: center; gap: 12px; font-weight: 600; }
+.cat-preview .avatar { width: 48px; height: 48px; border-radius: 14px; }
+.cat-preview .avatar svg { width: 24px; height: 24px; }
+.set-group { display: flex; flex-direction: column; gap: 6px; }
+.w-chip { display: inline-flex; align-items: center; gap: 5px; }
+.w-chip svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+.steps-list { margin: 0; padding-left: 22px; display: flex; flex-direction: column; gap: 8px; font-size: 15px; }
+a.btn { display: block; text-decoration: none; text-align: center; color: inherit; }
+a.btn.primary { color: var(--accent-ink); }
+.set-group > .eyebrow { padding: 0 2px; }
+.row .chev { color: var(--muted); font-size: 18px; line-height: 1; }
+.setup-fixed .money-hint { flex-basis: 100%; text-align: right; margin-top: -4px; }
 .checklist .row[disabled] { cursor: default; }
 .check-dot { width: 24px; height: 24px; border-radius: 50%; border: 2px solid var(--line); display: grid; place-items: center; font-size: 13px; font-weight: 700; flex: none; }
 .check-dot.on { background: var(--pos); border-color: var(--pos); color: var(--surface); }
@@ -357,6 +382,7 @@ legend { font-weight: 600; font-size: 14px; padding: 0 6px; }
 </nav>
 
 <input type="file" id="file-xlsx" accept=".xlsx,.xls,.xlsm" hidden>
+<input type="file" id="file-json" accept=".json,application/json" hidden>
 <div id="sheet-root"></div>
 <div id="toast-root"></div>
 
@@ -408,16 +434,39 @@ const ICON = {
   pct: '<path d="M18.5 5.5l-13 13"/><circle cx="7.5" cy="7.5" r="2.5"/><circle cx="16.5" cy="16.5" r="2.5"/>',
   trend: '<path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/>',
 };
+Object.assign(ICON, {
+  phone: '<rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M11 18.5h2"/>',
+  bolt: '<path d="M13 2.5L5 13.5h6l-1 8 8-11h-6z"/>',
+  plane: '<path d="M10.5 13.5L3 11l1.5-1.5 8 .5 4.5-4.5a2 2 0 0 1 3 3L15.5 13l.5 8L14.5 22.5 12 15z"/>',
+  baby: '<circle cx="12" cy="8" r="4.5"/><path d="M10.5 7.5h.01M13.5 7.5h.01M10.5 10c1 .7 2 .7 3 0"/><path d="M6 21c.5-4 3-6.5 6-6.5s5.5 2.5 6 6.5"/>',
+  tool: '<path d="M14.5 6.5a4 4 0 0 0 5 5L12 19a2.1 2.1 0 0 1-3-3l7.5-7.5"/><path d="M14.5 6.5L17 4l3 3-2.5 2.5"/>',
+  card: '<rect x="2.5" y="5" width="19" height="14" rx="2.5"/><path d="M2.5 10h19"/><path d="M6 15h4"/>',
+  bank: '<path d="M3 9.5L12 4l9 5.5"/><path d="M5 10v8M9.5 10v8M14.5 10v8M19 10v8"/><path d="M3 20.5h18"/>',
+  cash: '<rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.6"/><path d="M6 9.5v5M18 9.5v5"/>',
+  tag: '<path d="M3 12V4h8l10 10-8 8z"/><circle cx="7.5" cy="8.5" r="1.4"/>',
+});
+const CAT_ICONS = ["dots", "tag", "home", "bolt", "phone", "food", "cafe", "cart", "car", "plane", "heart", "shirt", "gift", "bag", "book", "play", "paw", "baby", "tool", "card", "coins", "wallet", "star", "trend"];
+const CAT_TINTS = ["blue", "orange", "teal", "pink", "purple", "green", "accent", "gray"];
 const CAT_LOOK = {
   out: { Home: ["home", "blue"], Food: ["food", "orange"], "Eat out": ["cafe", "orange"], Supermarket: ["cart", "teal"], Transportation: ["car", "blue"], "Health/medical": ["heart", "pink"], Personal: ["shirt", "purple"], Gifts: ["gift", "pink"], Travel: ["bag", "teal"], Study: ["book", "purple"], Entertainment: ["play", "purple"], Pets: ["paw", "orange"], Savings: ["coins", "accent"], Other: ["dots", "gray"] },
   in: { Paycheck: ["wallet", "green"], Bonus: ["star", "green"], Interest: ["pct", "green"], Business: ["trend", "green"], Savings: ["coins", "green"], Other: ["dots", "green"] },
 };
 function catAvatar(kind, id, cls = "") {
-  const [ic, tint] = (CAT_LOOK[kind] || CAT_LOOK.out)[id] || ["dots", "gray"];
+  const own = customCats(kind).find(c => c.id === id);
+  const [ic, tint] = own ? [own.icon || "tag", own.tint || "gray"] : (CAT_LOOK[kind] || CAT_LOOK.out)[id] || ["dots", "gray"];
   return `<span class="avatar t-${tint} ${cls}" aria-hidden="true"><svg viewBox="0 0 24 24">${ICON[ic]}</svg></span>`;
 }
-const catList = kind => kind === "in" ? IN_CATS : OUT_CATS;
-const catOf = (kind, id) => catList(kind).find(c => c.id === id) || catList(kind).find(c => c.id === "Other");
+/* Danh mục: có sẵn + tự tạo (S.cats), có thể ẩn danh mục có sẵn (S.hiddenCats). "Khác" luôn ở cuối, không ẩn được */
+const builtinCats = kind => kind === "in" ? IN_CATS : OUT_CATS;
+const customCats = kind => ((S && S.cats && S.cats[kind]) || []).map(c => ({ ...c, kw: [norm(c.label)] }));
+const hiddenCats = kind => (S && S.hiddenCats && S.hiddenCats[kind]) || [];
+function allCats(kind) {
+  const b = builtinCats(kind);
+  return [...b.filter(c => c.id !== "Other"), ...customCats(kind), b.find(c => c.id === "Other")];
+}
+// Danh mục hiện trong các ô chọn: bỏ danh mục đã ẩn
+const catList = kind => allCats(kind).filter(c => c.id === "Other" || !hiddenCats(kind).includes(c.id));
+const catOf = (kind, id) => allCats(kind).find(c => c.id === id) || builtinCats(kind).find(c => c.id === "Other");
 const isSave = t => t.kind === "out" && t.cat === "Savings";
 
 /* ---------- Utilities ---------- */
@@ -535,7 +584,7 @@ function parseQuick(text) {
 }
 
 /* ---------- State ---------- */
-const DEFAULTS = () => ({ v: 1, startMonth: curMonth(), openingBalance: 0, recurring: [], skips: {}, closings: {}, budgets: {}, learned: {}, goal: null });
+const DEFAULTS = () => ({ v: 1, startMonth: curMonth(), openingBalance: 0, recurring: [], skips: {}, closings: {}, budgets: {}, learned: {}, goal: null, cats: { out: [], in: [] }, hiddenCats: { out: [], in: [] }, wallets: [], moves: [], mainWallet: "Ví chính" });
 let S = DEFAULTS();
 let M = {};            // month -> tx[]
 let hasData = false;
@@ -544,14 +593,15 @@ const ui = { tab: "home", viewMonth: curMonth(), closeMonth: null, qaMonth: curM
 const txs = m => M[m] || [];
 function allTx() { return Object.values(M).flat(); }
 function totals(m) {
-  let inc = 0, out = 0, save = 0, fixedOut = 0, varOut = 0;
+  let inc = 0, out = 0, save = 0, fixedOut = 0, varOut = 0, adj = 0;
   for (const t of txs(m)) {
+    if (t.adj) { adj += t.kind === "in" ? t.amt : -t.amt; continue; } // số dư thêm vào sổ, không phải thu chi
     if (t.kind === "in") { inc += t.amt; continue; }
     out += t.amt;
     if (isSave(t)) save += t.amt;
     if (t.rid) fixedOut += t.amt; else varOut += t.amt;
   }
-  return { inc, out, save, spend: out - save, fixedOut, varOut, net: inc - out };
+  return { inc, out, save, spend: out - save, fixedOut, varOut, adj, net: inc - out + adj };
 }
 function openingOf(m) {
   if (m < S.startMonth) return null;
@@ -562,6 +612,8 @@ function openingOf(m) {
   }
   return bal;
 }
+// Tháng bắt đầu giữa chừng: số dư đầu tháng được tính ngược từ số tiền đang có lúc mở sổ
+const openLabel = (m, long) => (m === S.startMonth && S.startMid ? "Đầu tháng (tính ngược)" : long ? "Số dư đầu tháng" : "Đầu tháng");
 function pendingRec(m) {
   if (m < S.startMonth) return [];
   const skipped = S.skips[m] || [];
@@ -585,11 +637,11 @@ function safeToSpend(m) {
   const incomeExp = t.inc + pendIn;
   const fixedPlan = t.fixedOut + pendOut;
   // Tháng bắt đầu giữa chừng: tính theo tiền đang có, vì thu nhập tháng này có thể đã nằm sẵn trong số dư
-  const base = m === S.startMonth && S.startMid ? (S.openingBalance || 0) : 0;
+  const base = m === S.startMonth && S.startMid ? (S.openingBalance || 0) + t.adj : 0;
   const allowance = base + incomeExp - fixedPlan;
   return { incomeExp, fixedPlan, varOut: t.varOut, allowance, safe: allowance - t.varOut, pendIn, pendOut, base };
 }
-function learn(t) { const n = norm(t.desc); if (n) S.learned[t.kind + ":" + n] = t.cat; }
+function learn(t) { const n = norm(t.desc); if (n && !t.adj) S.learned[t.kind + ":" + n] = t.cat; }
 // Khoản cố định: có tháng bắt đầu/kết thúc và các mốc đổi số tiền (lương tăng, tiền nhà tăng…)
 const recLive = (r, m) => r.active !== false && (!r.since || m >= r.since) && (!r.until || m <= r.until);
 const recAmt = (r, m) => (r.steps && r.steps.length ? valueAt(r.steps, m, "amt") : r.amt);
@@ -697,7 +749,7 @@ const newGoal = () => {
 const newLoan = g => ({ id: uid(), name: "Khoản vay", total: 0, borrowAt: g.start, payFrom: addM(g.start, g.termMonths || 6), perTerm: 0, mode: "principal", rates: [{ from: g.start, rate: 0 }] });
 
 /* ---------- Storage: per-person private docs in the artifact db, browser storage as fallback ---------- */
-const APPV = "0.2.1";
+const APPV = "0.3.0";
 const LS_KEY = "cashwatch-v1";
 const Store = {
   mode: "loading", coll: null, dirty: new Set(), pending: new Set(), timer: null, flushing: false, known: new Set(),
@@ -833,6 +885,8 @@ function txRow(t) {
   const meta = [esc(c.label)];
   if (t.qty > 1) meta.push(`${short(t.unit)} × ${t.qty}`);
   if (t.rid) meta.push(`<span class="badge">cố định</span>`);
+  if (t.adj) meta.push(`<span class="badge">điều chỉnh số dư</span>`);
+  if (hasWallets()) meta.push(esc(walletName(t.w)));
   if (t.n > 1) meta.push(`<span class="badge acc">chia ${t.n} tháng</span>`);
   return `<button class="row" data-act="edit-tx" data-id="${t.id}">
     ${catAvatar(t.kind, t.cat)}
@@ -865,6 +919,29 @@ function wealthNow() {
   }
   for (let x = since; x <= m; x = addM(x, 1)) saved += txs(x).filter(isSave).reduce((a, t) => a + t.amt, 0);
   return { cash, saved, debt, net: cash + saved - debt };
+}
+/* ---------- Ví: mỗi ví khác có số dư riêng; Ví chính = tổng tiền đang có trừ các ví khác ---------- */
+const MAIN = "main";
+const WALLET_ICONS = [["wallet", "Ví"], ["cash", "Tiền mặt"], ["bank", "Ngân hàng"], ["phone", "Ví điện tử"], ["card", "Thẻ"], ["coins", "Khác"]];
+const hasWallets = () => S.wallets && S.wallets.length > 0;
+const walletOf = id => S.wallets.find(w => w.id === id);
+const walletName = id => (walletOf(id) || { name: S.mainWallet || "Ví chính" }).name;
+const walletIcon = (icon, cls = "") => `<span class="avatar t-accent ${cls}" aria-hidden="true"><svg viewBox="0 0 24 24">${ICON[icon] || ICON.wallet}</svg></span>`;
+function walletBal(w) {
+  let b = w.start || 0;
+  for (const t of allTx()) if (t.w === w.id && (t.at || 0) >= (w.at || 0)) b += t.kind === "in" ? t.amt : -t.amt;
+  for (const mv of S.moves || []) if ((mv.at || 0) >= (w.at || 0)) { if (mv.to === w.id) b += mv.amt; if (mv.from === w.id) b -= mv.amt; }
+  return b;
+}
+function walletsNow() {
+  const total = wealthNow().cash;
+  const others = (S.wallets || []).map(w => ({ ...w, bal: walletBal(w) }));
+  const main = { id: MAIN, name: S.mainWallet || "Ví chính", icon: "wallet", bal: total - others.reduce((a, w) => a + w.bal, 0) };
+  return { total, list: [main, ...others] };
+}
+function walletPicker(selected, act) {
+  if (!hasWallets()) return "";
+  return `<div class="cat-scroll" role="radiogroup" aria-label="Ví">${walletsNow().list.map(w => `<button type="button" class="chip w-chip ${w.id === selected ? "on" : ""}" data-act="${act}" data-w="${w.id}"><svg viewBox="0 0 24 24" aria-hidden="true">${ICON[w.icon] || ICON.wallet}</svg>${esc(w.name)}</button>`).join("")}</div>`;
 }
 function paceOf(m) {
   const s = safeToSpend(m);
@@ -925,6 +1002,7 @@ function setupChecklist() {
     { done: S.recurring.some(r => r.kind === "in"), label: "Thêm thu nhập hằng tháng", act: `data-act="plan-seg" data-seg="fixed"` },
     { done: allTx().some(t => t.kind === "out" && !t.rid), label: "Ghi khoản chi đầu tiên", act: `data-act="fab"` },
     { done: Object.keys(S.budgets).length > 0, label: "Đặt ngân sách đầu tiên", act: `data-act="plan-seg" data-seg="budget"` },
+    { done: standalone() || !!S.installSeen, label: "Cài app lên màn hình chính", act: `data-act="install"` },
   ];
   const n = items.filter(i => i.done).length;
   if (n === items.length) return "";
@@ -941,7 +1019,7 @@ function backupCard() {
   return `<div class="card"><div class="row">
     ${catAvatar("out", "Savings")}
     <span class="row-main"><span class="row-title">Sao lưu sổ của bạn</span><span class="row-meta">${last ? `Lần cuối ${new Date(last).toLocaleDateString("vi-VN")}.` : "Chưa sao lưu lần nào."} Dữ liệu chỉ nằm trong trình duyệt này.</span></span>
-    <button class="btn primary" data-act="export">Xuất Excel</button>
+    <button class="btn primary" data-act="backup">Sao lưu</button>
   </div></div>`;
 }
 function goalMini() {
@@ -998,7 +1076,7 @@ function renderHome() {
       <div class="eyebrow-row"><span class="eyebrow">Tài sản ròng</span><details class="info"><summary>Là gì?</summary><p>Tổng tài sản sau khi trừ nợ: tiền đang có (tiền mặt và tài khoản) cộng tiền để dành, trừ đi khoản còn nợ.</p></details></div>
       <div class="hero-num ${w.net < 0 ? "neg" : ""}">${w.net < 0 ? "−" : ""}${nf.format(Math.round(Math.abs(w.net)))}<span class="cur">₫</span></div>
       <div class="tiles">
-        <button class="tile" data-act="tab" data-tab="close"><span class="tile-label">Tiền đang có</span><span class="tile-v num">${short(w.cash)}</span></button>
+        <button class="tile" data-act="tab" data-tab="wallets"><span class="tile-label">Tiền đang có</span><span class="tile-v num">${short(w.cash)}</span></button>
         <button class="tile" data-act="plan-seg" data-seg="goal"><span class="tile-label">Để dành</span><span class="tile-v num">${short(w.saved)}</span></button>
         <button class="tile" data-act="plan-seg" data-seg="goal"><span class="tile-label">Nợ còn</span><span class="tile-v num ${w.debt > 0 ? "neg-t" : ""}">${w.debt > 0 ? "−" + short(w.debt) : "0"}</span></button>
       </div>
@@ -1133,7 +1211,7 @@ function renderMonth() {
         <div><span>Để dành</span><b class="num" style="color:var(--accent)">${short(t.save)}</b></div>
       </div>
       <div class="ledger">
-        ${open != null ? `<span>Số dư đầu tháng</span><span class="v">${money(open)}</span>` : ""}
+        ${open != null ? `<span>${openLabel(m, true)}</span><span class="v">${money(open)}</span>` : ""}
         ${open != null ? `<span class="total">Số dư cuối tháng</span><span class="v total">${money(open + t.net)}</span>` : ""}
         ${close ? `<span>Thực tế khi chốt</span><span class="v">${money(close.cash + close.bank)}</span>` : ""}
       </div>
@@ -1157,8 +1235,8 @@ function planHead() {
 function renderBudget() {
   const m = curMonth();
   const byCat = amortizedByCat(m);
-  const cats = OUT_CATS.filter(c => c.id !== "Savings" && (byCat[c.id] || budgetAt(c.id, m)));
-  const others = OUT_CATS.filter(c => c.id !== "Savings" && !cats.includes(c));
+  const cats = allCats("out").filter(c => c.id !== "Savings" && (byCat[c.id] || budgetAt(c.id, m)));
+  const others = catList("out").filter(c => c.id !== "Savings" && !cats.includes(c));
   const budgeted = cats.filter(c => budgetAt(c.id, m));
   const totB = budgeted.reduce((a, c) => a + budgetAt(c.id, m), 0);
   const totS = budgeted.reduce((a, c) => a + (byCat[c.id] || 0), 0);
@@ -1231,6 +1309,61 @@ function renderFixed() {
   </div>`;
 }
 
+function renderWallets() {
+  const { total, list } = walletsNow();
+  const moves = (S.moves || []).slice().sort((a, b) => (b.at || 0) - (a.at || 0)).slice(0, 10);
+  view().innerHTML = `
+  <div class="app">
+    <div class="page-head"><button class="icon-btn" data-act="tab" data-tab="home" aria-label="Quay lại Tổng quan"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></button><h2>Tiền đang có</h2></div>
+    <section class="hero">
+      <div class="eyebrow">Tổng các ví</div>
+      <div class="hero-num ${total < 0 ? "neg" : ""}">${total < 0 ? "−" : ""}${nf.format(Math.round(Math.abs(total)))}<span class="cur">₫</span></div>
+      <p class="muted" style="margin:0;font-size:13px">Tiền mặt và tài khoản theo sổ, chưa gồm tiền để dành.</p>
+    </section>
+    <div class="card rows">${list.map(w => `<button class="row" data-act="wallet-edit" data-w="${w.id}">
+      ${walletIcon(w.icon)}
+      <span class="row-main"><span class="row-title">${esc(w.name)}</span><span class="row-meta">${w.id === MAIN ? (hasWallets() ? "Phần còn lại của tổng" : "Toàn bộ tiền đang có") : esc((WALLET_ICONS.find(x => x[0] === w.icon) || [, "Ví"])[1])}</span></span>
+      <span class="row-amt num ${w.bal < 0 ? "neg-t" : ""}">${money(w.bal)}</span>
+    </button>`).join("")}</div>
+    <div class="actions"><button class="btn" data-act="wallet-new">+ Thêm ví</button>${hasWallets() ? `<button class="btn primary" data-act="move-new">Chuyển tiền</button>` : ""}</div>
+    ${hasWallets() ? "" : `<p class="note">Tách tiền thành nhiều ví như tiền mặt, ngân hàng, Momo để biết mỗi nơi còn bao nhiêu. Khi ghi giao dịch, chọn ví bằng một chạm.</p>`}
+    ${moves.length ? `<section class="section"><h2>Chuyển tiền gần đây</h2><div class="card rows">${moves.map(mv => `<div class="row">
+      <span class="row-main"><span class="row-title">${esc(walletName(mv.from === MAIN ? null : mv.from))} → ${esc(walletName(mv.to === MAIN ? null : mv.to))}</span><span class="row-meta">${dayLabel(mv.d)}</span></span>
+      <span class="row-amt num">${short(mv.amt)}</span>
+      <button class="btn ghost" data-act="move-del" data-id="${mv.id}" aria-label="Xóa lần chuyển này">Xóa</button>
+    </div>`).join("")}</div></section>` : ""}
+    <button class="btn block" data-act="go-close" data-m="${defaultCloseMonth()}">Chốt sổ: đối chiếu với tiền thực có</button>
+  </div>`;
+}
+function openWalletSheet(id) {
+  const isMain = id === MAIN, isNew = !id;
+  const w = isMain ? { id: MAIN, name: S.mainWallet || "Ví chính", icon: "wallet" } : isNew ? { name: "", icon: "cash" } : walletOf(id);
+  if (!w) return;
+  const now = walletsNow(), cur = isNew ? 0 : (now.list.find(x => x.id === w.id) || { bal: 0 }).bal, mainBal = now.list[0].bal;
+  openSheet(`${sheetHead(isNew ? "Thêm ví" : "Sửa ví")}
+    <div class="field"><label for="w-name">Tên ví</label><input id="w-name" value="${esc(w.name)}" placeholder="vd Tiền mặt, Momo, Techcombank" maxlength="30"></div>
+    ${isMain ? `<p class="note">${esc(w.name)} tự tính bằng tổng tiền đang có trừ các ví khác. Muốn chỉnh số dư, hãy chốt sổ.</p>` : `
+    <div class="field"><label>Loại</label><div class="chips" id="w-icons">${WALLET_ICONS.map(([ic, l]) => `<button type="button" class="chip ${w.icon === ic ? "on" : ""}" data-act="w-icon" data-icon="${ic}">${l}</button>`).join("")}</div></div>
+    <div class="field"><label for="w-bal">${isNew ? "Số dư hiện tại" : "Số dư đúng lúc này"}</label><input id="w-bal" inputmode="decimal" data-money value="${isNew ? "" : nf.format(Math.round(cur))}" placeholder="vd 2tr"></div>
+    ${isNew ? `<div class="field"><label>Số tiền này</label><div class="seg" id="w-src"><button type="button" class="on" data-act="w-src" data-v="split">Đã có trong tổng</button><button type="button" data-act="w-src" data-v="new">Là tiền mới</button></div>
+      <span class="help" id="w-src-note">Tách ra từ ${esc(S.mainWallet || "Ví chính")} (đang có ${money(mainBal)}).</span></div>` : `<p class="note">Đổi số dư ở đây thì phần chênh lệch được tính vào ${esc(S.mainWallet || "Ví chính")}.</p>`}`}
+    <div class="actions">
+      ${isNew || isMain ? "" : `<button class="btn danger" data-act="wallet-del">Xóa ví</button>`}
+      <button class="btn primary" data-act="wallet-save">${isNew ? "Thêm ví" : "Lưu"}</button>
+    </div>`, { wid: isNew ? null : w.id, icon: w.icon, src: "split", cur });
+}
+function openMoveSheet() {
+  const L = walletsNow().list;
+  const opts = sel => L.map(w => `<option value="${w.id}" ${w.id === sel ? "selected" : ""}>${esc(w.name)} · ${short(w.bal)}</option>`).join("");
+  openSheet(`${sheetHead("Chuyển tiền giữa các ví")}
+    <div class="grid2">
+      <div class="field"><label for="mv-from">Từ</label><select id="mv-from">${opts(L[0].id)}</select></div>
+      <div class="field"><label for="mv-to">Đến</label><select id="mv-to">${opts(L[1] ? L[1].id : L[0].id)}</select></div>
+    </div>
+    <div class="field"><label for="mv-amt">Số tiền</label><input id="mv-amt" inputmode="decimal" data-money placeholder="vd 500k"></div>
+    <p class="note">Ví dụ rút tiền ATM, nạp Momo. Chuyển tiền không tính là thu hay chi.</p>
+    <button class="btn primary block" data-act="move-save">Chuyển</button>`, {});
+}
 function defaultCloseMonth() {
   const cur = curMonth(), prev = addM(cur, -1);
   if (prev >= S.startMonth && !S.closings[prev]) return prev;
@@ -1243,7 +1376,7 @@ function renderClose() {
   const t = totals(m), open = openingOf(m) ?? 0, book = open + t.net;
   const c = S.closings[m];
   const hist = Object.entries(S.closings).sort((a, b) => b[0].localeCompare(a[0]));
-  const back = ui.closeBack === "month" ? ["month", "Giao dịch"] : ["home", "Tổng quan"];
+  const back = ui.closeBack === "month" ? ["month", "Giao dịch"] : ui.closeBack === "wallets" ? ["wallets", "Tiền đang có"] : ["home", "Tổng quan"];
   view().innerHTML = `
   <div class="app">
     <div class="page-head"><button class="icon-btn" data-act="tab" data-tab="${back[0]}" aria-label="Quay lại ${back[1]}"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></button><h2>Chốt sổ</h2></div>
@@ -1253,7 +1386,7 @@ function renderClose() {
     <section class="hero">
       <div class="eyebrow">Theo sổ · ${mLabel(m)}</div>
       <div class="ledger" style="border-top:0;padding-top:0">
-        <span>Đầu tháng</span><span class="v">${money(open)}</span>
+        <span>${openLabel(m)}</span><span class="v">${money(open)}</span>
         <span>Thu</span><span class="v" style="color:var(--pos)">${signed(t.inc, "+", money)}</span>
         <span>Chi (gồm để dành)</span><span class="v">${signed(t.out, "−", money)}</span>
         <span class="total">Số dư theo sổ</span><span class="v total">${money(book)}</span>
@@ -1262,18 +1395,15 @@ function renderClose() {
     </section>
     ${c ? `<section class="card summary stack">
         <div class="ledger" style="border-top:0;padding-top:0">
-          <span>Tiền mặt, ví</span><span class="v">${money(c.cash)}</span>
-          <span>Tài khoản</span><span class="v">${money(c.bank)}</span>
+          ${c.wallets ? Object.entries(c.wallets).map(([id, v]) => `<span>${esc(walletName(id === MAIN ? null : id))}</span><span class="v">${money(v)}</span>`).join("") : `<span>Tiền mặt, ví</span><span class="v">${money(c.cash)}</span>
+          <span>Tài khoản</span><span class="v">${money(c.bank)}</span>`}
           <span class="total">Thực tế đã chốt</span><span class="v total">${money(c.cash + c.bank)}</span>
         </div>
         <p class="muted" style="margin:0;font-size:13px">Tháng sau bắt đầu từ số thực tế này. Chốt lúc ${new Date(c.at).toLocaleDateString("vi-VN")}.</p>
         <button class="btn" data-act="reopen" data-m="${m}">Mở lại để chốt lại</button>
       </section>` : `<section class="section">
         <h2>Tiền thực có lúc này</h2>
-        <div class="grid2">
-          <div class="field"><label for="close-cash">Tiền mặt, ví</label><input id="close-cash" inputmode="decimal" data-money placeholder="vd 1tr2"></div>
-          <div class="field"><label for="close-bank">Tài khoản ngân hàng</label><input id="close-bank" inputmode="decimal" data-money placeholder="vd 7.800.000"></div>
-        </div>
+        ${closeFields()}
         <div id="close-diff"></div>
         <button class="btn primary block" data-act="do-close" data-m="${m}">Chốt sổ ${mLabel(m).toLowerCase()}</button>
       </section>`}
@@ -1287,12 +1417,28 @@ function renderClose() {
   </div>`;
   updateCloseDiff();
 }
+// Ô nhập tiền thực có: chưa có ví thì 2 ô Tiền mặt / Ngân hàng, có ví thì mỗi ví một ô (để trống = giữ số theo sổ)
+function closeFields() {
+  if (!hasWallets()) return `<div class="grid2">
+    <div class="field"><label for="close-cash">Tiền mặt, ví</label><input id="close-cash" class="close-in" data-w="cash" inputmode="decimal" data-money placeholder="vd 1tr2"></div>
+    <div class="field"><label for="close-bank">Tài khoản ngân hàng</label><input id="close-bank" class="close-in" data-w="bank" inputmode="decimal" data-money placeholder="vd 7.800.000"></div>
+  </div>`;
+  return `<div class="stack">${walletsNow().list.map(w => `<div class="field"><label for="close-w-${w.id}">${esc(w.name)}</label><input id="close-w-${w.id}" class="close-in" data-w="${w.id}" inputmode="decimal" data-money placeholder="Theo sổ ${nf.format(Math.round(w.bal))}"></div>`).join("")}
+    <p class="note" style="margin:0">Để trống ví nào thì giữ số theo sổ của ví đó.</p></div>`;
+}
+function readClose() {
+  const vals = {}; let any = false;
+  document.querySelectorAll(".close-in").forEach(i => { const v = parseMoney(i.value); if (v != null) any = true; vals[i.dataset.w] = v; });
+  if (hasWallets()) for (const w of walletsNow().list) if (vals[w.id] == null) vals[w.id] = w.bal;
+  const real = Object.values(vals).reduce((a, v) => a + (v || 0), 0);
+  return { vals, any, real };
+}
 function updateCloseDiff() {
   const box = $("#close-diff"); if (!box) return;
-  const cash = parseMoney($("#close-cash").value), bank = parseMoney($("#close-bank").value);
-  if (cash == null && bank == null) { box.innerHTML = ""; return; }
+  const { any, real } = readClose();
+  if (!any) { box.innerHTML = ""; return; }
   const m = ui.closeMonth, book = (openingOf(m) ?? 0) + totals(m).net;
-  const real = (cash || 0) + (bank || 0), d = real - book;
+  const d = real - book;
   if (Math.abs(d) < 1) { box.innerHTML = `<div class="diff ok"><span>Thực tế ${money(real)}</span><strong>Khớp sổ</strong></div>`; return; }
   box.innerHTML = `<div class="diff ${d < 0 ? "neg" : "pos"}">
     <span>Thực tế ${money(real)} · sổ ${money(book)}</span>
@@ -1470,6 +1616,10 @@ function renderWelcome() {
       <li>${catAvatar("out", "Savings")}<span><b>Biết còn tiêu được bao nhiêu</b><span class="muted">App tự trừ khoản cố định và báo khi bạn chi nhanh hơn dự kiến.</span></span></li>
     </ol>
     <button class="btn primary block" data-act="start-fresh">Bắt đầu trong 1 phút</button>
+    <details class="info"><summary>Đã dùng CashWatch trên máy khác?</summary>
+      <p>Trên máy cũ, vào Cài đặt → Tạo file sao lưu và gửi file sang máy này. Sau đó mở file ở đây.</p>
+      <div class="actions" style="margin-top:10px"><button class="btn" data-act="pick-json">Khôi phục từ file sao lưu</button></div>
+    </details>
     <details class="info"><summary>Đã có sổ trên Excel?</summary>
       <p>Tải file mẫu, dán dữ liệu vào rồi nhập. File được đọc ngay trên máy bạn, không gửi đi đâu.</p>
       <div class="actions" style="margin-top:10px"><button class="btn" data-act="template">Tải file mẫu</button><button class="btn" data-act="pick-file">Nhập file Excel</button></div>
@@ -1511,9 +1661,12 @@ function saveSetup(st) {
   // Tiền đang có đã gồm các khoản này, nên số dư đầu tháng được tính ngược lại từ đó.
   const cash = parseMoney($("#su-cash").value) || 0;
   const net = done.reduce((a, r) => a + (r.kind === "in" ? r.amt : -r.amt), 0);
-  S = Object.assign(DEFAULTS(), { startMonth: cur, openingBalance: cash - net, startMid: true, recurring: rec, skips: {} });
+  // Tiền đang có ít hơn số tính ra: phần thiếu là khoản đã tiêu trước khi dùng app, ghi thành một dòng điều chỉnh thay vì để số dư đầu âm
+  const opening = cash - net;
+  S = Object.assign(DEFAULTS(), { startMonth: cur, openingBalance: Math.max(0, opening), startMid: true, recurring: rec, skips: {} });
   M = {}; hasData = true; ui.tab = "home";
   for (const r of done) addTx({ m: cur, d: cur + "-01", kind: r.kind, amt: r.amt, unit: r.amt, qty: 1, desc: r.name, cat: r.cat, n: 1, rid: r.id });
+  if (opening < 0) addTx({ m: cur, d: today(), kind: "out", amt: -opening, unit: -opening, qty: 1, desc: "Đã chi trước khi ghi sổ", cat: "Other", n: 1, adj: true });
   Store.touch("settings"); closeSheet(); render(); window.scrollTo(0, 0);
   toast("Xong! Bấm nút + để ghi khoản chi đầu tiên");
 }
@@ -1529,7 +1682,7 @@ function render() {
   if (PLAN_TABS.includes(ui.tab)) ui.planSeg = ui.tab;
   const navTab = PLAN_TABS.includes(ui.tab) ? "plan" : ui.tab;
   document.querySelectorAll(".tab").forEach(b => b.setAttribute("aria-current", b.dataset.tab === navTab ? "page" : "false"));
-  ({ home: renderHome, month: renderMonth, budget: renderBudget, fixed: renderFixed, goal: renderGoal, close: renderClose })[ui.tab]();
+  ({ home: renderHome, month: renderMonth, budget: renderBudget, fixed: renderFixed, goal: renderGoal, close: renderClose, wallets: renderWallets })[ui.tab]();
 }
 
 /* ---------- Ghi nhanh: nút + giữa thanh dưới. Gõ một dòng hoặc chạm khoản gần đây, chọn danh mục bằng biểu tượng, chọn ngày bằng một chạm ---------- */
@@ -1543,6 +1696,7 @@ function dayLabel(iso) {
 }
 function openQuickAdd() {
   ui.qaCat = null; ui.qaKind = null; ui.qaAdded = [];
+  ui.qaWallet = S.lastWallet && walletOf(S.lastWallet) ? S.lastWallet : MAIN;
   const vm = ui.tab === "month" ? ui.viewMonth : curMonth();
   ui.qaDate = vm === curMonth() ? today() : `${vm}-${pad(daysIn(vm))}`;
   openSheet(`<div class="sheet-head"><h2>Ghi giao dịch</h2><button class="btn ghost" data-act="sheet-close">Xong</button></div>
@@ -1551,6 +1705,7 @@ function openQuickAdd() {
       <div class="qa-amount" id="qa-amount" aria-live="polite"></div>
       <input id="qa-input" class="qa-big" enterkeyhint="done" placeholder="vd 55k phở" aria-label="Số tiền và nội dung">
       <div class="qa-dates" id="qa-dates"></div>
+      <div id="qa-wallet"></div>
       <div id="qa-recent"></div>
       <div class="cat-grid" id="qa-cats" role="radiogroup" aria-label="Danh mục"></div>
       <div class="qa-actions">
@@ -1573,7 +1728,7 @@ function qaState() {
 function recentEntries(kind) {
   const seen = new Set(), out = [];
   for (const t of allTx().slice().sort((a, b) => (b.at || 0) - (a.at || 0))) {
-    if (t.kind !== kind || !t.desc || t.rid) continue; // khoản cố định đã tự hiện mỗi tháng, không cần gợi ý lại
+    if (t.kind !== kind || !t.desc || t.rid || t.adj) continue; // khoản cố định đã tự hiện mỗi tháng, không cần gợi ý lại
     const k = norm(t.desc) + "|" + t.amt;
     if (seen.has(k)) continue;
     seen.add(k); out.push(t);
@@ -1593,10 +1748,12 @@ function renderQaPreview() {
   const custom = !dates.includes(ui.qaDate);
   $("#qa-dates").innerHTML = `${dates.map(d => `<button type="button" class="chip ${ui.qaDate === d ? "on" : ""}" data-act="qa-date" data-d="${d}">${dayLabel(d)}</button>`).join("")}
     <label class="chip date-chip ${custom ? "on" : ""}"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>${custom ? dayLabel(ui.qaDate) : "Ngày khác"}<input type="date" id="qa-date-pick" value="${ui.qaDate}" max="${today()}" aria-label="Chọn ngày"></label>`;
+  $("#qa-wallet").innerHTML = walletPicker(ui.qaWallet, "qa-wallet");
   const rec = typed ? [] : recentEntries(kind);
   $("#qa-recent").innerHTML = rec.length ? `<div class="eyebrow">Ghi lại khoản gần đây</div><div class="cat-scroll">${rec.map(t => `<button type="button" class="chip recent" data-act="qa-recent" data-id="${t.id}">${esc(t.desc)} <b class="num">${short(t.amt)}</b></button>`).join("")}</div>` : "";
   const pick = typed || ui.qaCat ? cat : null;
-  $("#qa-cats").innerHTML = catList(kind).map(c => `<button type="button" class="cat-btn ${c.id === pick ? "on" : ""}" role="radio" aria-checked="${c.id === pick}" data-act="qa-cat-set" data-cat="${esc(c.id)}">${catAvatar(kind, c.id)}<span>${esc(c.label)}</span></button>`).join("");
+  $("#qa-cats").innerHTML = catList(kind).map(c => `<button type="button" class="cat-btn ${c.id === pick ? "on" : ""}" role="radio" aria-checked="${c.id === pick}" data-act="qa-cat-set" data-cat="${esc(c.id)}">${catAvatar(kind, c.id)}<span>${esc(c.label)}</span></button>`).join("")
+    + `<button type="button" class="cat-btn" data-act="cat-new" data-kind="${kind}" data-back="qa"><span class="avatar t-gray" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 6v12M6 12h12"/></svg></span><span>Thêm</span></button>`;
   const added = (ui.qaAdded || []).map(id => allTx().find(x => x.id === id)).filter(Boolean);
   $("#qa-added").innerHTML = added.length ? `<div class="eyebrow" style="margin-bottom:6px">Vừa ghi</div><div class="card rows">${added.map(txRow).join("")}</div>` : "";
 }
@@ -1611,7 +1768,9 @@ function submitQuick(e) {
     return;
   }
   const d = ui.qaDate || today(), m = d.slice(0, 7);
-  const t = addTx({ m, d, kind, amt: p.amount, unit: p.unit, qty: p.qty, desc: p.desc || catOf(kind, cat).label, cat, n: 1 });
+  const w = hasWallets() && ui.qaWallet !== MAIN && walletOf(ui.qaWallet) ? ui.qaWallet : undefined;
+  S.lastWallet = w || MAIN;
+  const t = addTx({ m, d, kind, amt: p.amount, unit: p.unit, qty: p.qty, desc: p.desc || catOf(kind, cat).label, cat, n: 1, ...(w ? { w } : {}) });
   input.value = ""; ui.qaCat = null;
   ui.qaAdded = [t.id, ...(ui.qaAdded || [])].slice(0, 5);
   render(); renderQaPreview(); input.focus();
@@ -1639,7 +1798,7 @@ function seg(kind) {
 function openTxSheet(t, m, draft) {
   const isNew = !t;
   t = t || draft || { kind: "out", unit: null, qty: 1, desc: "", cat: "Other", m: m || curMonth(), n: 1 };
-  const st = { id: t.id, kind: t.kind, cat: t.cat };
+  const st = { id: t.id, kind: t.kind, cat: t.cat, w: t.w && walletOf(t.w) ? t.w : MAIN };
   openSheet(`${sheetHead(isNew ? "Thêm giao dịch" : "Sửa giao dịch")}
     <div id="tx-kind-wrap">${seg(st.kind)}</div>
     <div class="grid2">
@@ -1648,6 +1807,7 @@ function openTxSheet(t, m, draft) {
     </div>
     <div class="field"><label for="tx-desc">Diễn giải</label><input id="tx-desc" value="${esc(t.desc)}" placeholder="vd Cà phê"></div>
     <div class="field"><label>Danh mục</label><div id="cat-wrap">${catChips(st.kind, st.cat)}</div></div>
+    ${hasWallets() ? `<div class="field"><label>Ví</label><div id="tx-w-wrap">${walletPicker(st.w, "tx-wallet")}</div></div>` : ""}
     <div class="grid2">
       <div class="field"><label for="tx-date">Ngày</label><input id="tx-date" type="date" value="${t.d || t.m + "-01"}"></div>
       <div class="field" id="tx-n-wrap" ${st.kind === "in" ? "hidden" : ""}><label for="tx-n">Chia đều cho</label><select id="tx-n">${Array.from({ length: 12 }, (_, i) => `<option value="${i + 1}" ${(t.n || 1) === i + 1 ? "selected" : ""}>${i + 1} tháng</option>`).join("")}</select></div>
@@ -1700,19 +1860,181 @@ function openBudgetSheet(catId, mParam) {
     <button class="btn primary block" data-act="budget-save">Lưu</button>`, { cat: catId });
 }
 
+/* ---------- Danh mục tự tạo ---------- */
+function openCatSheet(kind) {
+  kind = kind || "out";
+  const hidden = hiddenCats(kind), own = customCats(kind).map(c => c.id);
+  const rows = allCats(kind).map(c => {
+    const mine = own.includes(c.id), locked = c.id === "Other" || c.id === "Savings", off = hidden.includes(c.id);
+    return `<div class="row" style="${off ? "opacity:.55" : ""}">${catAvatar(kind, c.id)}
+      <span class="row-main"><span class="row-title">${esc(c.label)}</span><span class="row-meta">${mine ? "Tự tạo" : "Có sẵn"}${off ? " · đang ẩn" : ""}</span></span>
+      ${mine ? `<button class="btn ghost" data-act="cat-edit" data-kind="${kind}" data-id="${esc(c.id)}">Sửa</button>` : locked ? "" : `<button class="btn ghost" data-act="cat-toggle" data-kind="${kind}" data-id="${esc(c.id)}">${off ? "Hiện" : "Ẩn"}</button>`}
+    </div>`;
+  }).join("");
+  openSheet(`${sheetHead("Danh mục")}
+    <div class="seg"><button type="button" class="${kind === "out" ? "on" : ""}" data-act="cat-kind" data-kind="out">Khoản chi</button><button type="button" class="${kind === "in" ? "on" : ""}" data-act="cat-kind" data-kind="in">Khoản thu</button></div>
+    <button class="btn primary block" data-act="cat-new" data-kind="${kind}" data-back="cats">+ Tạo danh mục ${kind === "in" ? "thu" : "chi"}</button>
+    <div class="card rows">${rows}</div>
+    <p class="note">Danh mục bị ẩn không hiện khi ghi, giao dịch cũ vẫn giữ nguyên.</p>`, { catKind: kind });
+}
+function openCatEdit(kind, id, back) {
+  const c = id ? customCats(kind).find(x => x.id === id) : { label: "", icon: "tag", tint: "blue" };
+  if (!c) return;
+  if (back === "qa") ui.qaText = $("#qa-input") ? $("#qa-input").value : "";
+  openSheet(`${sheetHead(id ? "Sửa danh mục" : `Tạo danh mục ${kind === "in" ? "thu" : "chi"}`)}
+    <div class="cat-preview" id="ce-preview"></div>
+    <div class="field"><label for="ce-name">Tên</label><input id="ce-name" maxlength="24" value="${esc(c.label)}" placeholder="${kind === "in" ? "vd Bán đồ cũ, Cho thuê" : "vd Con cái, Từ thiện, Trả góp"}"></div>
+    <div class="field"><label>Biểu tượng</label><div class="icon-grid">${CAT_ICONS.map(ic => `<button type="button" class="icon-pick ${ic === c.icon ? "on" : ""}" data-act="ce-icon" data-icon="${ic}" aria-label="Biểu tượng ${ic}"><svg viewBox="0 0 24 24">${ICON[ic]}</svg></button>`).join("")}</div></div>
+    <div class="field"><label>Màu</label><div class="tint-row">${CAT_TINTS.map(t => `<button type="button" class="tint-pick avatar t-${t} ${t === c.tint ? "on" : ""}" data-act="ce-tint" data-tint="${t}" aria-label="Màu ${t}"></button>`).join("")}</div></div>
+    <div class="actions">
+      ${id ? `<button class="btn danger" data-act="cat-del">Xóa</button>` : ""}
+      <button class="btn primary" data-act="cat-save">${id ? "Lưu" : "Tạo danh mục"}</button>
+    </div>`, { kind, id, icon: c.icon || "tag", tint: c.tint || "blue", back }, catPreview);
+}
+function catPreview() {
+  const st = sheet && sheet.state, box = $("#ce-preview"); if (!st || !box) return;
+  const name = ($("#ce-name") && $("#ce-name").value.trim()) || "Tên danh mục";
+  box.innerHTML = `<span class="avatar t-${st.tint}" aria-hidden="true"><svg viewBox="0 0 24 24">${ICON[st.icon]}</svg></span><span>${esc(name)}</span>`;
+}
+// Sau khi tạo/sửa danh mục: quay về đúng chỗ đã mở
+function catBack(st, newId) {
+  if (st.back === "qa") {
+    const text = ui.qaText || "";
+    openQuickAdd();
+    $("#qa-input").value = text;
+    ui.qaKind = st.kind; if (newId) ui.qaCat = newId;
+    renderQaPreview();
+  } else if (st.back === "cats") openCatSheet(st.kind);
+  else closeSheet();
+}
+
 function openSettings() {
   const months = Object.keys(M).filter(m => txs(m).length).sort();
-  openSheet(`${sheetHead("Dữ liệu")}
-    <p class="muted" style="margin:0;font-size:14px">${Store.mode === "cloud" ? "Sổ được lưu riêng theo tài khoản Claude của bạn, mở trên máy nào cũng thấy. Người khác mở link không xem được." : "Sổ đang lưu trên trình duyệt này. Xuất Excel định kỳ để không mất dữ liệu."}</p>
-    <div class="card rows">
+  const nCustom = customCats("out").length + customCats("in").length;
+  const link = (act, title, meta, extra = "") => `<button class="row" data-act="${act}" ${extra}><span class="row-main"><span class="row-title">${title}</span>${meta ? `<span class="row-meta">${meta}</span>` : ""}</span><span class="chev" aria-hidden="true">›</span></button>`;
+  openSheet(`${sheetHead("Cài đặt")}
+    <div class="set-group"><span class="eyebrow">Sổ của bạn</span><div class="card rows">
       <div class="row"><span class="row-main"><span class="row-title">Bắt đầu từ</span><span class="row-meta">${mLabel(S.startMonth)} · số dư đầu ${money(S.openingBalance)}</span></span><button class="btn" data-act="edit-start">Sửa</button></div>
       <div class="row"><span class="row-main"><span class="row-title">Giao dịch</span><span class="row-meta">${allTx().length} khoản${months.length ? ` · ${mShort(months[0])} → ${mShort(months[months.length - 1])}` : ""}</span></span></div>
-    </div>
-    <button class="btn primary block" data-act="export">Xuất file Excel</button>
-    <button class="btn block" data-act="pick-file">Nhập từ file Excel</button>
-    <button class="btn block" data-act="template">Tải file Excel mẫu</button>
+      ${link("open-cats", "Danh mục", nCustom ? `${nCustom} danh mục tự tạo` : "Tạo danh mục riêng, ẩn danh mục không dùng")}
+      ${link("open-wallets", "Ví", hasWallets() ? `${S.wallets.length + 1} ví` : "Tách tiền mặt, ngân hàng, ví điện tử")}
+    </div></div>
+    <div class="set-group"><span class="eyebrow">Dùng hằng ngày</span><div class="card rows">
+      ${standalone() ? `<div class="row"><span class="row-main"><span class="row-title">Đã cài lên màn hình chính</span><span class="row-meta">Mở CashWatch như một app, dùng được cả khi mất mạng</span></span></div>` : link("install", "Cài lên màn hình chính", "Mở bằng một chạm như app, dùng được khi mất mạng")}
+      ${link("reminder", "Nhắc ghi chép mỗi tối", "Thêm lời nhắc vào lịch trên điện thoại")}
+    </div></div>
+    <div class="set-group"><span class="eyebrow">Sao lưu và chuyển máy</span><div class="card rows">
+      ${link("backup", "Tạo file sao lưu", S.lastBackup ? `Lần cuối ${new Date(S.lastBackup).toLocaleDateString("vi-VN")}. Gửi file sang máy khác để mở tiếp sổ.` : "Gửi file sang điện thoại hoặc máy tính khác để mở tiếp sổ")}
+      ${link("pick-json", "Khôi phục từ file sao lưu", "Mở sổ từ file .json đã tạo trên máy khác")}
+    </div></div>
+    <div class="set-group"><span class="eyebrow">Excel</span><div class="card rows">
+      ${link("export", "Xuất file Excel", "Xem và lọc dữ liệu trong Excel, Google Sheets")}
+      ${link("pick-file", "Nhập từ file Excel", "")}
+      ${link("template", "Tải file Excel mẫu", "")}
+    </div></div>
+    <p class="muted" style="margin:0;font-size:13px">${Store.mode === "cloud" ? "Sổ được lưu riêng theo tài khoản Claude của bạn, mở trên máy nào cũng thấy." : "Sổ chỉ lưu trên trình duyệt này, không gửi lên server nào. Xóa dữ liệu trình duyệt là mất sổ, nên hãy tạo file sao lưu định kỳ."}</p>
     <button class="btn danger block" data-act="wipe">Xóa toàn bộ dữ liệu</button>
     <p class="note" style="text-align:center">CashWatch v${APPV} · Mẹo: trên máy tính bấm phím N để ghi nhanh</p>`, {});
+}
+
+/* ---------- Sao lưu và chuyển máy: một file .json chứa toàn bộ sổ, khôi phục y nguyên ---------- */
+async function makeBackup() {
+  const body = JSON.stringify({ app: "CashWatch", format: 1, version: APPV, exportedAt: new Date().toISOString(), settings: S, months: M });
+  const name = `CashWatch-sao-luu-${today()}.json`;
+  const blob = new Blob([body], { type: "application/json" });
+  S.lastBackup = Date.now(); Store.touch("settings");
+  // Điện thoại: mở bảng chia sẻ để gửi thẳng qua Zalo, AirDrop, email…
+  try {
+    const file = new File([blob], name, { type: "application/json" });
+    if (navigator.canShare && navigator.canShare({ files: [file] }) && window.matchMedia("(pointer:coarse)").matches) {
+      await navigator.share({ files: [file], title: "Sao lưu CashWatch" });
+      toast("Đã tạo file sao lưu"); return;
+    }
+  } catch (e) { if (e && e.name === "AbortError") return; }
+  if (window.claude && window.claude.use) {
+    try { const d = await window.claude.use("downloads"); const r = await d.save({ filename: name, data: new TextEncoder().encode(body) }); if (r && r.status === "saved") toast("Đã lưu " + name); return; } catch (e) { if (e && e.code === "cancelled") return; }
+  }
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a"); a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
+  toast("Đã tải " + name);
+}
+async function readBackup(file) {
+  if (!file) return;
+  let o;
+  try { o = JSON.parse(await file.text()); } catch (e) { toast("File này không phải file sao lưu CashWatch"); return; }
+  if (!o || o.app !== "CashWatch" || !o.settings || typeof o.months !== "object") { toast("File này không phải file sao lưu CashWatch"); return; }
+  const n = Object.values(o.months).reduce((a, l) => a + (Array.isArray(l) ? l.length : 0), 0);
+  openSheet(`${sheetHead("Khôi phục sổ")}
+    <div class="card summary stack"><div class="ledger" style="border-top:0;padding-top:0">
+      <span>Tạo lúc</span><span class="v">${o.exportedAt ? new Date(o.exportedAt).toLocaleString("vi-VN") : "không rõ"}</span>
+      <span>Giao dịch</span><span class="v">${n} khoản</span>
+      <span>Khoản cố định</span><span class="v">${(o.settings.recurring || []).length}</span>
+    </div></div>
+    ${hasData ? `<p style="margin:0;font-size:13px;color:var(--warn)">Toàn bộ sổ đang có trên máy này sẽ được thay bằng sổ trong file.</p>` : ""}
+    <button class="btn primary block" data-act="restore-go">Khôi phục</button>`, { backup: o });
+}
+async function applyBackup(o) {
+  S = Object.assign(DEFAULTS(), o.settings); normGoal(S.goal);
+  M = {}; for (const [m, l] of Object.entries(o.months)) if (Array.isArray(l) && l.length) M[m] = l;
+  hasData = true; ui.tab = "home"; ui.viewMonth = curMonth(); ui.closeMonth = null;
+  closeSheet(); render(); window.scrollTo(0, 0);
+  await Store.replaceAll();
+  toast(`Đã khôi phục ${allTx().length} giao dịch`);
+}
+
+/* ---------- Cài như app (PWA) và nhắc ghi chép ---------- */
+let installEvt = null;
+window.addEventListener("beforeinstallprompt", e => { e.preventDefault(); installEvt = e; });
+window.addEventListener("appinstalled", () => { installEvt = null; toast("Đã cài CashWatch lên màn hình chính"); });
+const standalone = () => window.matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+const isIOS = () => /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+async function openInstall() {
+  if (!S.installSeen) { S.installSeen = true; Store.touch("settings"); if (ui.tab === "home") render(); }
+  if (installEvt) { installEvt.prompt(); try { await installEvt.userChoice; } catch (e) {} installEvt = null; closeSheet(); return; }
+  openSheet(`${sheetHead("Cài lên màn hình chính")}
+    ${isIOS() ? `<ol class="steps-list">
+      <li>Mở trang này bằng <b>Safari</b>.</li>
+      <li>Bấm nút <b>Chia sẻ</b> (ô vuông có mũi tên lên) ở thanh dưới.</li>
+      <li>Chọn <b>Thêm vào MH chính</b>, rồi bấm <b>Thêm</b>.</li></ol>` : `<ol class="steps-list">
+      <li>Mở trang này bằng <b>Chrome</b> hoặc <b>Edge</b>.</li>
+      <li>Bấm menu <b>⋮</b> ở góc trên.</li>
+      <li>Chọn <b>Cài đặt ứng dụng</b> hoặc <b>Thêm vào màn hình chính</b>.</li></ol>`}
+    <p class="note">Sau khi cài, CashWatch mở như một app riêng và vẫn dùng được khi mất mạng. Sổ vẫn nằm trên máy này như trước.</p>
+    <button class="btn primary block" data-act="sheet-close">Đã hiểu</button>`, {});
+}
+function openReminder() {
+  openSheet(`${sheetHead("Nhắc ghi chép mỗi tối")}
+    <p class="muted" style="margin:0;font-size:14px">Thêm một lời nhắc lặp lại mỗi ngày vào lịch của điện thoại. Lời nhắc có sẵn link mở CashWatch.</p>
+    <div class="field"><label for="rm-time">Giờ nhắc</label><input id="rm-time" type="time" value="${S.remindAt || "21:00"}"></div>
+    <a class="btn primary block" id="rm-google" target="_blank" rel="noopener" data-act="rm-google" href="#">Thêm vào Google Calendar</a>
+    <button class="btn block" data-act="rm-ics">Tải file lịch (iPhone, Outlook)</button>
+    <p class="note">Trên iPhone, mở file vừa tải rồi bấm Thêm tất cả. Muốn tắt nhắc, xóa sự kiện trong ứng dụng Lịch.</p>`, {}, updateReminderLink);
+}
+function reminderParts() {
+  const [hh, mm] = (($("#rm-time") && $("#rm-time").value) || "21:00").split(":").map(Number);
+  const d = new Date(); d.setHours(hh, mm, 0, 0);
+  const stamp = x => `${x.getFullYear()}${pad(x.getMonth() + 1)}${pad(x.getDate())}T${pad(x.getHours())}${pad(x.getMinutes())}00`;
+  const end = new Date(d.getTime() + 5 * 60000);
+  const url = location.protocol.startsWith("http") ? location.origin + location.pathname : "";
+  return { start: stamp(d), end: stamp(end), url, time: `${pad(hh)}:${pad(mm)}` };
+}
+function updateReminderLink() {
+  const a = $("#rm-google"); if (!a) return;
+  const r = reminderParts();
+  const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "Asia/Ho_Chi_Minh";
+  a.href = "https://calendar.google.com/calendar/render?" + new URLSearchParams({ action: "TEMPLATE", text: "Ghi chép thu chi", details: "Mở CashWatch, ghi các khoản hôm nay." + (r.url ? " " + r.url : ""), dates: `${r.start}/${r.end}`, ctz: tz, recur: "RRULE:FREQ=DAILY" }).toString();
+}
+function downloadIcs() {
+  const r = reminderParts();
+  const ics = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//CashWatch//VI", "CALSCALE:GREGORIAN", "BEGIN:VEVENT",
+    `UID:cashwatch-nhac-${Date.now()}@cashwatch`, `DTSTAMP:${new Date().toISOString().replace(/[-:]/g, "").slice(0, 15)}Z`,
+    `DTSTART:${r.start}`, `DTEND:${r.end}`, "RRULE:FREQ=DAILY", "SUMMARY:Ghi chép thu chi",
+    `DESCRIPTION:Mở CashWatch\\, ghi các khoản hôm nay.${r.url ? " " + r.url : ""}`, ...(r.url ? [`URL:${r.url}`] : []),
+    "BEGIN:VALARM", "ACTION:DISPLAY", "DESCRIPTION:Ghi chép thu chi", "TRIGGER:PT0M", "END:VALARM", "END:VEVENT", "END:VCALENDAR"].join("\r\n");
+  const url = URL.createObjectURL(new Blob([ics], { type: "text/calendar" }));
+  const a = document.createElement("a"); a.href = url; a.download = "CashWatch-nhac-ghi-chep.ics"; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
 }
 
 function openStartSheet(fresh) {
@@ -1889,8 +2211,8 @@ function loadXLSX() {
   });
   return xlsxPromise;
 }
-const SHEETS = { setup: "Thiết lập", tx: "Giao dịch", rec: "Khoản cố định", budget: "Ngân sách", close: "Chốt sổ" };
-const TX_HEAD = ["Tháng", "Ngày", "Loại", "Số tiền", "Đơn giá", "Số lượng", "Diễn giải", "Danh mục", "Số tháng phân bổ", "Cố định"];
+const SHEETS = { setup: "Thiết lập", tx: "Giao dịch", rec: "Khoản cố định", budget: "Ngân sách", close: "Chốt sổ", wallet: "Ví" };
+const TX_HEAD = ["Tháng", "Ngày", "Loại", "Số tiền", "Đơn giá", "Số lượng", "Diễn giải", "Danh mục", "Số tháng phân bổ", "Cố định", "Ví"];
 const REC_HEAD = ["Tên", "Loại", "Số tiền/tháng", "Danh mục", "Đang áp dụng", "Từ tháng", "Đến tháng", "Các mốc số tiền"];
 const BUD_HEAD = ["Danh mục", "Từ tháng", "Số tiền"];
 const CLOSE_HEAD = ["Tháng", "Tiền mặt", "Tài khoản"];
@@ -1917,11 +2239,17 @@ function toDate(XLSX, v) {
 const toNum = v => (typeof v === "number" ? v : parseMoney(v));
 const toKind = v => (/^(thu|in|\+)/.test(norm(v) || String(v || "").trim()) ? "in" : "out");
 const isMark = v => /^(x|co|1|true|yes|v)$/.test(norm(v));
+let importCats = null; // danh mục mới gặp khi đọc file Excel
 function toCat(v, kind, desc) {
   const n = norm(v);
   if (n) {
-    const c = catList(kind).find(c => norm(c.id) === n || norm(c.label) === n);
+    const c = [...allCats(kind), ...(importCats ? importCats[kind] : [])].find(c => norm(c.id) === n || norm(c.label) === n);
     if (c) return c.id;
+    if (importCats && String(v).trim().length <= 30) {
+      const nc = { id: "c_" + uid(), label: String(v).trim(), icon: "tag", tint: "gray" };
+      importCats[kind].push(nc);
+      return nc.id;
+    }
   }
   return guessCat(desc, kind);
 }
@@ -1938,6 +2266,11 @@ function sheetRows(XLSX, wb, name) {
 const col = (row, ...names) => { for (const n of names) { const v = row[norm(n)]; if (v !== undefined && v !== "") return v; } return ""; };
 
 function parseWorkbook(XLSX, wb) {
+  importCats = { out: [], in: [] };
+  try { return readWorkbook(XLSX, wb); } finally { importCats = null; }
+}
+function readWorkbook(XLSX, wb) {
+  const newCats = importCats, walletNames = new Set();
   const txRows = sheetRows(XLSX, wb, SHEETS.tx);
   if (!txRows) throw new Error(`Không thấy sheet “${SHEETS.tx}”. Hãy tải file mẫu trong app và dán dữ liệu vào đó.`);
   const cur = curMonth();
@@ -1949,7 +2282,9 @@ function parseWorkbook(XLSX, wb) {
     const amt = total || (unit ? unit * qty : null);
     if (!m || !amt || amt <= 0) continue;
     const kind = toKind(col(r, "Loại")), desc = String(col(r, "Diễn giải")).trim();
-    rows.push({ m, d: d || m + "-01", kind, amt, unit: unit || amt / qty, qty, desc, cat: toCat(col(r, "Danh mục"), kind, desc), n: kind === "in" ? 1 : Math.max(1, Math.round(toNum(col(r, "Số tháng phân bổ")) || 1)), mark: isMark(col(r, "Cố định")) });
+    const wName = String(col(r, "Ví")).trim();
+    if (wName) walletNames.add(wName);
+    rows.push({ m, d: d || m + "-01", kind, amt, unit: unit || amt / qty, qty, desc, cat: toCat(col(r, "Danh mục"), kind, desc), n: kind === "in" ? 1 : Math.max(1, Math.round(toNum(col(r, "Số tháng phân bổ")) || 1)), mark: isMark(col(r, "Cố định")), wName });
   }
   if (!rows.length) throw new Error(`Sheet “${SHEETS.tx}” chưa có dòng nào đủ tháng và số tiền.`);
 
@@ -1987,16 +2322,17 @@ function parseWorkbook(XLSX, wb) {
   for (const t of rows) {
     if (t.m > cur) { future.push(t); continue; }
     const rid = (recFromSheet ? t.mark : true) ? ridOf.get(keyOf(t)) : null;
-    const { mark, ...rest } = t;
-    keep.push({ ...rest, id: uid(), at: Date.now() + keep.length, ...(rid ? { rid } : {}) });
+    const { mark, wName, ...rest } = t;
+    keep.push({ ...rest, id: uid(), at: Date.now() + keep.length, ...(rid ? { rid } : {}), ...(wName ? { wName } : {}) });
   }
 
   // Thiết lập: tháng bắt đầu và số dư đầu
-  let startMonth = null, openingBalance = 0;
+  let startMonth = null, openingBalance = 0, startMid = false;
   for (const r of sheetRows(XLSX, wb, SHEETS.setup) || []) {
     const k = norm(col(r, "Mục")), v = col(r, "Giá trị");
     if (k.startsWith("thang bat dau")) startMonth = toMonth(XLSX, v);
     if (k.startsWith("so du dau")) openingBalance = toNum(v) || 0;
+    if (k.startsWith("bat dau giua thang")) startMid = isMark(v);
   }
   const firstTx = keep.map(t => t.m).sort()[0] || cur;
   if (!startMonth || startMonth > firstTx) startMonth = firstTx;
@@ -2013,9 +2349,17 @@ function parseWorkbook(XLSX, wb) {
     if (m) closings[m] = { cash: toNum(col(r, "Tiền mặt")) || 0, bank: toNum(col(r, "Tài khoản")) || 0 };
   }
 
+  // Sheet Ví (không bắt buộc): số dư hiện tại của từng ví
+  const walletBals = {};
+  for (const r of sheetRows(XLSX, wb, SHEETS.wallet) || []) {
+    const name = String(col(r, "Tên ví", "Tên")).trim(), bal = toNum(col(r, "Số dư hiện tại", "Số dư"));
+    if (!name) continue;
+    walletNames.add(name);
+    if (bal != null) walletBals[name] = bal;
+  }
   const learned = {};
   for (const t of keep) { const n = norm(t.desc); if (n) learned[t.kind + ":" + n] = t.cat; }
-  return { tx: keep, future, recurring, recFromSheet, startMonth, openingBalance, budgets, closings, learned };
+  return { tx: keep, future, recurring, recFromSheet, startMonth, openingBalance, budgets, closings, learned, newCats, walletNames: [...walletNames], walletBals, startMid };
 }
 
 async function handleFile(file) {
@@ -2051,9 +2395,22 @@ function openImportPreview(res, name) {
 }
 async function applyImport(res) {
   const keepGoal = S.goal;
-  S = Object.assign(DEFAULTS(), { startMonth: res.startMonth, openingBalance: res.openingBalance, recurring: res.recurring, budgets: res.budgets, learned: res.learned, goal: keepGoal, importedAt: Date.now() });
+  const keepCats = S.cats, keepHidden = S.hiddenCats, keepMain = S.mainWallet;
+  S = Object.assign(DEFAULTS(), { startMonth: res.startMonth, openingBalance: res.openingBalance, startMid: !!res.startMid, recurring: res.recurring, budgets: res.budgets, learned: res.learned, goal: keepGoal, importedAt: Date.now() });
+  S.cats = { out: [...(keepCats?.out || []), ...res.newCats.out], in: [...(keepCats?.in || []), ...res.newCats.in] };
+  S.hiddenCats = keepHidden || S.hiddenCats;
+  S.mainWallet = keepMain || S.mainWallet;
+  // Ví ghi trong file: ví chính giữ nguyên, các ví khác tạo mới với số dư bằng tổng giao dịch của ví đó
+  // Có số dư trong sheet Ví thì lấy làm mốc (sau mọi giao dịch nhập vào), không thì cộng dồn từ giao dịch
+  const wid = {}, after = Date.now() + res.tx.length + 1;
+  for (const name of res.walletNames) {
+    if (norm(name) === norm(S.mainWallet)) continue;
+    const known = res.walletBals && res.walletBals[name] != null;
+    const w = { id: "w_" + uid(), name, icon: "wallet", start: known ? res.walletBals[name] : 0, at: known ? after : 0 };
+    S.wallets.push(w); wid[name] = w.id;
+  }
   M = {};
-  for (const t of res.tx) (M[t.m] = M[t.m] || []).push(t);
+  for (const t0 of res.tx) { const { wName, ...t } = t0; if (wName && wid[wName]) t.w = wid[wName]; (M[t.m] = M[t.m] || []).push(t); }
   // Chốt sổ theo thứ tự tháng để số dư theo sổ của mỗi tháng tính đúng
   for (const m of Object.keys(res.closings).sort()) {
     const c = res.closings[m];
@@ -2086,17 +2443,22 @@ async function exportExcel() {
   let XLSX;
   try { XLSX = await loadXLSX(); } catch (e) { toast("Không tải được bộ ghi Excel. Kiểm tra mạng rồi thử lại."); return; }
   const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, sheetOf(XLSX, [["Mục", "Giá trị"], ["Tháng bắt đầu", S.startMonth], ["Số dư đầu", S.openingBalance]], [16, 14]), SHEETS.setup);
+  XLSX.utils.book_append_sheet(wb, sheetOf(XLSX, [["Mục", "Giá trị"], ["Tháng bắt đầu", S.startMonth], ["Số dư đầu", S.openingBalance], ...(S.startMid ? [["Bắt đầu giữa tháng", "x"]] : [])], [20, 14]), SHEETS.setup);
   const txRows = [TX_HEAD];
   allTx().sort((a, b) => a.m.localeCompare(b.m) || (a.d || "").localeCompare(b.d || "") || (a.at || 0) - (b.at || 0))
-    .forEach(t => txRows.push([t.m, t.d || "", t.kind === "in" ? "Thu" : "Chi", t.amt, t.unit ?? t.amt, t.qty || 1, t.desc, catLabel(t.kind, t.cat), t.n || 1, t.rid ? "x" : ""]));
-  XLSX.utils.book_append_sheet(wb, sheetOf(XLSX, txRows, [9, 11, 6, 12, 12, 9, 28, 16, 10, 8]), SHEETS.tx);
+    .forEach(t => txRows.push([t.m, t.d || "", t.kind === "in" ? "Thu" : "Chi", t.amt, t.unit ?? t.amt, t.qty || 1, t.desc, catLabel(t.kind, t.cat), t.n || 1, t.rid ? "x" : "", S.wallets.length ? walletName(t.w) : ""]));
+  XLSX.utils.book_append_sheet(wb, sheetOf(XLSX, txRows, [9, 11, 6, 12, 12, 9, 28, 16, 10, 8, 14]), SHEETS.tx);
   const recRows = [REC_HEAD];
   S.recurring.forEach(r => recRows.push([r.name, r.kind === "in" ? "Thu" : "Chi", recAmt(r, curMonth()), catLabel(r.kind, r.cat), r.active !== false ? "x" : "", r.since || "", r.until || "", (r.steps || []).map(s => `${s.from}: ${s.amt}`).join("; ")]));
   XLSX.utils.book_append_sheet(wb, sheetOf(XLSX, recRows, [22, 6, 14, 16, 12, 10, 10, 30]), SHEETS.rec);
   const budRows = [BUD_HEAD];
   for (const [cat, b] of Object.entries(S.budgets)) (Array.isArray(b) ? b : [{ from: S.startMonth, amt: b }]).forEach(s => budRows.push([catLabel("out", cat), s.from, s.amt]));
   XLSX.utils.book_append_sheet(wb, sheetOf(XLSX, budRows, [16, 10, 12]), SHEETS.budget);
+  if (hasWallets()) {
+    const wRows = [["Tên ví", "Loại", "Số dư hiện tại"]];
+    walletsNow().list.forEach(w => wRows.push([w.name, w.id === MAIN ? "Ví chính" : (WALLET_ICONS.find(x => x[0] === w.icon) || [, "Ví"])[1], Math.round(w.bal)]));
+    XLSX.utils.book_append_sheet(wb, sheetOf(XLSX, wRows, [20, 14, 16]), SHEETS.wallet);
+  }
   const closeRows = [CLOSE_HEAD];
   Object.entries(S.closings).sort((a, b) => a[0].localeCompare(b[0])).forEach(([m, c]) => closeRows.push([m, c.cash, c.bank]));
   XLSX.utils.book_append_sheet(wb, sheetOf(XLSX, closeRows, [10, 12, 12]), SHEETS.close);
@@ -2130,10 +2492,11 @@ async function downloadTemplate() {
     ["Tháng", "Ghi dạng 2026-01 hoặc 01/2026. Cột Ngày (không bắt buộc) ghi dạng 2026-01-15."],
     ["Loại", "Chi hoặc Thu."],
     ["Số tiền", "Số đầy đủ (55000) hoặc viết tắt (55k, 1tr5). Có thể bỏ trống nếu đã điền Đơn giá và Số lượng."],
-    ["Danh mục chi", OUT_CATS.map(x => x.label).join(", ")],
-    ["Danh mục thu", IN_CATS.map(x => x.label).join(", ")],
+    ["Danh mục chi", catList("out").map(x => x.label).join(", ") + ". Tên khác sẽ được tạo thành danh mục mới."],
+    ["Danh mục thu", catList("in").map(x => x.label).join(", ")],
     ["Số tháng phân bổ", "Khoản lớn trả một lần nhưng dùng nhiều tháng, ví dụ 3 để chia đều 3 tháng."],
     ["Cố định", `Đánh x nếu dòng này là một khoản trong sheet “${SHEETS.rec}” (khớp theo tên).`],
+    ["Ví", "Không bắt buộc. Tên ví của khoản này, ví dụ Tiền mặt, Momo, Techcombank. Mỗi tên sẽ thành một ví trong app."],
     ["Các mốc số tiền", "Khi số tiền cố định thay đổi theo thời gian, ví dụ: 2026-01: 4000000; 2027-01: 4500000"],
     [""],
     ["Các dòng ví dụ chỉ để tham khảo, hãy xóa trước khi nhập dữ liệu thật."],
@@ -2250,7 +2613,9 @@ document.addEventListener("click", async e => {
       const unit = parseMoney($("#tx-unit").value);
       if (!unit || unit <= 0) { toast("Nhập số tiền, ví dụ 45k"); $("#tx-unit").focus(); break; }
       const qty = Math.max(1, Math.round(Number($("#tx-qty").value) || 1));
-      const data = { kind: st.kind, unit, qty, amt: unit * qty, desc: $("#tx-desc").value.trim() || catOf(st.kind, st.cat).label, cat: st.cat, d: $("#tx-date").value || today(), m: ($("#tx-date").value || today()).slice(0, 7), n: st.kind === "in" ? 1 : Number($("#tx-n").value) || 1 };
+      const data = { kind: st.kind, unit, qty, amt: unit * qty, desc: $("#tx-desc").value.trim() || catOf(st.kind, st.cat).label, cat: st.cat, d: $("#tx-date").value || today(), m: ($("#tx-date").value || today()).slice(0, 7), n: st.kind === "in" ? 1 : Number($("#tx-n").value) || 1, w: st.w !== MAIN ? st.w : undefined };
+      // Đổi ví của khoản cũ: đánh dấu lại thời điểm để ví mới tính khoản này
+      if (st.id) { const old = allTx().find(x => x.id === st.id); if (old && (old.w || MAIN) !== st.w) data.at = Date.now(); }
       if (st.id) updateTx(st.id, data); else addTx(data);
       closeSheet(); render(); toast(st.id ? "Đã lưu" : `Đã thêm ${money(data.amt)}`); break;
     }
@@ -2285,16 +2650,22 @@ document.addEventListener("click", async e => {
     case "close-month": ui.closeMonth = el.dataset.m; ui.tab = "close"; render(); break;
     case "close-adjust": {
       const d = Number(el.dataset.d), m = ui.closeMonth;
-      const keep = [$("#close-cash").value, $("#close-bank").value];
+      const keep = [...document.querySelectorAll(".close-in")].map(i => [i.id, i.value]);
       addTx({ m, d: m + "-" + pad(daysIn(m)), kind: d < 0 ? "out" : "in", amt: Math.abs(d), unit: Math.abs(d), qty: 1, desc: d < 0 ? "Chi chưa rõ (chốt sổ)" : "Thu chưa rõ (chốt sổ)", cat: "Other", n: 1 });
-      render(); $("#close-cash").value = keep[0]; $("#close-bank").value = keep[1]; updateCloseDiff();
+      render(); keep.forEach(([id, v]) => { const i = document.getElementById(id); if (i) i.value = v; }); updateCloseDiff();
       toast("Đã ghi khoản chênh lệch"); break;
     }
     case "do-close": {
-      const cash = parseMoney($("#close-cash").value), bank = parseMoney($("#close-bank").value);
-      if (cash == null && bank == null) { toast("Nhập tiền mặt hoặc số dư tài khoản trước"); $("#close-cash").focus(); break; }
-      const m = el.dataset.m;
-      S.closings[m] = { cash: cash || 0, bank: bank || 0, book: (openingOf(m) ?? 0) + totals(m).net, at: Date.now() };
+      const { vals, any } = readClose();
+      if (!any) { toast("Nhập số tiền thực có trước"); document.querySelector(".close-in")?.focus(); break; }
+      const m = el.dataset.m, now = Date.now();
+      const book = (openingOf(m) ?? 0) + totals(m).net;
+      if (hasWallets()) {
+        // Mỗi ví lấy số thực tế làm mốc mới; Ví chính tự khớp vì là phần còn lại của tổng
+        for (const w of S.wallets) { w.start = vals[w.id] || 0; w.at = now; }
+        const others = S.wallets.reduce((a, w) => a + (vals[w.id] || 0), 0);
+        S.closings[m] = { cash: vals[MAIN] || 0, bank: others, wallets: vals, book, at: now };
+      } else S.closings[m] = { cash: vals.cash || 0, bank: vals.bank || 0, book, at: now };
       Store.touch("settings"); render(); toast(`Đã chốt ${mLabel(m).toLowerCase()}`); break;
     }
     case "reopen": delete S.closings[el.dataset.m]; Store.touch("settings"); render(); break;
@@ -2303,7 +2674,7 @@ document.addEventListener("click", async e => {
     case "qa-recent": {
       const t = allTx().find(x => x.id === el.dataset.id); if (!t) break;
       $("#qa-input").value = `${t.desc} ${nf.format(t.amt)}`;
-      ui.qaKind = t.kind; ui.qaCat = t.cat; renderQaPreview(); $("#qa-input").focus(); break;
+      ui.qaKind = t.kind; ui.qaCat = t.cat; if (t.w && walletOf(t.w)) ui.qaWallet = t.w; renderQaPreview(); $("#qa-input").focus(); break;
     }
     case "export": exportExcel(); break;
     case "wipe": {
@@ -2368,15 +2739,111 @@ document.addEventListener("click", async e => {
       S.goal = null; Store.touch("settings"); closeSheet(); render(); toast("Đã xóa kế hoạch"); break;
     }
     case "import-go": { const btn = el; btn.disabled = true; btn.textContent = "Đang nhập…"; await applyImport(st.res); break; }
+    case "qa-wallet": ui.qaWallet = el.dataset.w; renderQaPreview(); break;
+    case "tx-wallet": st.w = el.dataset.w; el.parentElement.querySelectorAll(".chip").forEach(c => c.classList.toggle("on", c === el)); break;
+    case "wallet-new": openWalletSheet(null); break;
+    case "wallet-edit": openWalletSheet(el.dataset.w); break;
+    case "w-icon": st.icon = el.dataset.icon; el.parentElement.querySelectorAll(".chip").forEach(c => c.classList.toggle("on", c === el)); break;
+    case "w-src": {
+      st.src = el.dataset.v; el.parentElement.querySelectorAll("button").forEach(b => b.classList.toggle("on", b === el));
+      $("#w-src-note").textContent = st.src === "new" ? "Cộng thêm vào tổng tiền đang có. Không tính là khoản thu." : `Tách ra từ ${S.mainWallet || "Ví chính"} (đang có ${money(walletsNow().list[0].bal)}).`;
+      break;
+    }
+    case "wallet-save": {
+      const name = $("#w-name").value.trim();
+      if (!name) { toast("Đặt tên cho ví"); $("#w-name").focus(); break; }
+      if (st.wid === MAIN) { S.mainWallet = name; Store.touch("settings"); closeSheet(); render(); toast("Đã lưu"); break; }
+      const bal = $("#w-bal").value.trim() ? parseMoney($("#w-bal").value) : 0;
+      if (bal == null) { toast("Chưa hiểu số dư, ví dụ 2tr"); break; }
+      const now = Date.now();
+      if (!st.wid) {
+        const w = { id: "w_" + uid(), name, icon: st.icon || "wallet", start: st.src === "new" ? 0 : bal, at: now };
+        S.wallets.push(w);
+        if (st.src === "new" && bal) addTx({ m: curMonth(), d: today(), kind: bal > 0 ? "in" : "out", amt: Math.abs(bal), unit: Math.abs(bal), qty: 1, desc: "Số dư ban đầu " + name, cat: "Other", n: 1, adj: true, w: w.id, at: now });
+        toast(`Đã thêm ví ${name}`);
+      } else {
+        const w = walletOf(st.wid); if (!w) break;
+        w.name = name; w.icon = st.icon || w.icon;
+        if (Math.round(bal) !== Math.round(st.cur)) { w.start = bal; w.at = now; }
+        toast("Đã lưu ví");
+      }
+      Store.touch("settings"); closeSheet(); render(); break;
+    }
+    case "wallet-del": {
+      el.dataset.orig = "Xóa ví";
+      if (!armDanger(el, "Bấm lần nữa để xóa")) break;
+      const w = walletOf(st.wid); if (!w) break;
+      S.wallets = S.wallets.filter(x => x.id !== w.id);
+      if (S.lastWallet === w.id) S.lastWallet = MAIN;
+      Store.touch("settings"); closeSheet(); render(); toast(`Đã xóa ví ${w.name}. Số dư gộp về ${S.mainWallet || "Ví chính"}.`); break;
+    }
+    case "open-cats": openCatSheet("out"); break;
+    case "open-wallets": closeSheet(); ui.tab = "wallets"; render(); window.scrollTo(0, 0); break;
+    case "cat-kind": openCatSheet(el.dataset.kind); break;
+    case "cat-new": openCatEdit(el.dataset.kind, null, el.dataset.back || "cats"); break;
+    case "cat-edit": openCatEdit(el.dataset.kind, el.dataset.id, "cats"); break;
+    case "cat-toggle": {
+      const k = el.dataset.kind, id = el.dataset.id;
+      S.hiddenCats = S.hiddenCats || { out: [], in: [] };
+      const h = S.hiddenCats[k] = S.hiddenCats[k] || [];
+      if (h.includes(id)) S.hiddenCats[k] = h.filter(x => x !== id); else h.push(id);
+      Store.touch("settings"); openCatSheet(k); render(); break;
+    }
+    case "ce-icon": st.icon = el.dataset.icon; el.parentElement.querySelectorAll(".icon-pick").forEach(b => b.classList.toggle("on", b === el)); catPreview(); break;
+    case "ce-tint": st.tint = el.dataset.tint; el.parentElement.querySelectorAll(".tint-pick").forEach(b => b.classList.toggle("on", b === el)); catPreview(); break;
+    case "cat-save": {
+      const label = $("#ce-name").value.trim();
+      if (!label) { toast("Đặt tên cho danh mục"); $("#ce-name").focus(); break; }
+      const dup = allCats(st.kind).find(c => norm(c.label) === norm(label) && c.id !== st.id);
+      if (dup) { toast(`Đã có danh mục “${dup.label}”`); break; }
+      S.cats = S.cats || { out: [], in: [] };
+      const list = S.cats[st.kind] = S.cats[st.kind] || [];
+      let id = st.id;
+      if (id) Object.assign(list.find(c => c.id === id), { label, icon: st.icon, tint: st.tint });
+      else { id = "c_" + uid(); list.push({ id, label, icon: st.icon, tint: st.tint }); }
+      Store.touch("settings"); render(); toast(st.id ? "Đã lưu danh mục" : `Đã tạo danh mục ${label}`);
+      catBack(st, st.id ? null : id); break;
+    }
+    case "cat-del": {
+      el.dataset.orig = "Xóa";
+      if (!armDanger(el, "Bấm lần nữa để xóa")) break;
+      const k = st.kind, id = st.id;
+      S.cats[k] = (S.cats[k] || []).filter(c => c.id !== id);
+      // Giao dịch, khoản cố định thuộc danh mục này chuyển về "Khác"
+      for (const [m, l] of Object.entries(M)) if (l.some(t => t.kind === k && t.cat === id)) { l.forEach(t => { if (t.kind === k && t.cat === id) t.cat = "Other"; }); Store.touchMonth(m); }
+      S.recurring.forEach(r => { if ((r.kind === "in" ? "in" : "out") === k && r.cat === id) r.cat = "Other"; });
+      if (k === "out") delete S.budgets[id];
+      for (const key of Object.keys(S.learned)) if (S.learned[key] === id) delete S.learned[key];
+      Store.touch("settings"); render(); toast("Đã xóa danh mục. Các khoản cũ chuyển về Khác.");
+      openCatSheet(k); break;
+    }
+    case "install": openInstall(); break;
+    case "reminder": openReminder(); break;
+    case "rm-ics": downloadIcs(); toast("Đã tải file lịch"); break;
+    case "backup": makeBackup(); break;
+    case "pick-json": $("#file-json").click(); break;
+    case "restore-go": { el.disabled = true; el.textContent = "Đang khôi phục…"; await applyBackup(st.backup); break; }
+    case "move-new": openMoveSheet(); break;
+    case "move-save": {
+      const from = $("#mv-from").value, to = $("#mv-to").value, amt = parseMoney($("#mv-amt").value);
+      if (from === to) { toast("Chọn hai ví khác nhau"); break; }
+      if (!amt || amt <= 0) { toast("Nhập số tiền, ví dụ 500k"); $("#mv-amt").focus(); break; }
+      S.moves = S.moves || [];
+      S.moves.push({ id: uid(), at: Date.now(), d: today(), from, to, amt });
+      Store.touch("settings"); closeSheet(); render(); toast(`Đã chuyển ${short(amt)} sang ${walletName(to === MAIN ? null : to)}`); break;
+    }
+    case "move-del": S.moves = (S.moves || []).filter(x => x.id !== el.dataset.id); Store.touch("settings"); render(); toast("Đã xóa lần chuyển tiền"); break;
     case "sheet-close": closeSheet(); break;
     case "sheet-bg": if (e.target === el) closeSheet(); break;
   }
 });
 document.addEventListener("input", e => {
   if (e.target.id === "qa-input") { if (!e.target.value) { ui.qaCat = null; ui.qaKind = null; } renderQaPreview(); }
-  if (e.target.id === "close-cash" || e.target.id === "close-bank") updateCloseDiff();
+  if (e.target.classList && e.target.classList.contains("close-in")) updateCloseDiff();
   if (["tx-unit", "tx-qty"].includes(e.target.id)) updateTxTotal();
   if (e.target.id === "lg-search") { ui.lgQuery = e.target.value; renderLedgerList(); }
+  if (e.target.id === "ce-name") catPreview();
+  if (e.target.id === "rm-time") updateReminderLink();
   if (e.target.matches && e.target.matches("input[data-money]")) moneyHint(e.target);
 });
 document.addEventListener("change", e => {
@@ -2384,6 +2851,8 @@ document.addEventListener("change", e => {
   if (e.target.id === "qa-date-pick" && e.target.value) { ui.qaDate = e.target.value > today() ? today() : e.target.value; renderQaPreview(); }
   if (/^g-l\d+-mode$/.test(e.target.id) && sheet && sheet.state.goalForm) openGoalSheet(readGoalForm(sheet.state.draft));
   if (e.target.id === "file-xlsx") { const f = e.target.files[0]; e.target.value = ""; closeSheet(); handleFile(f); }
+  if (e.target.id === "file-json") { const f = e.target.files[0]; e.target.value = ""; closeSheet(); readBackup(f); }
+  if (e.target.id === "rm-time") { S.remindAt = e.target.value; Store.touch("settings"); updateReminderLink(); }
 });
 document.addEventListener("keydown", e => {
   if (e.key === "Escape" && sheet) { closeSheet(); return; }
@@ -2401,6 +2870,13 @@ function moneyHint(input) {
 }
 document.addEventListener("submit", e => { if (e.target.id === "qa-form") submitQuick(e); });
 
-Store.init().then(render, () => { Store.mode = "local"; render(); });
+Store.init().then(render, () => { Store.mode = "local"; render(); }).then(() => {
+  // Lối tắt "Ghi giao dịch" từ biểu tượng app: mở ngay ô ghi nhanh
+  if (new URLSearchParams(location.search).has("ghi") && hasData) { history.replaceState(null, "", location.pathname); openQuickAdd(); }
+});
+// Cài như app: chỉ khi chạy trên web thật (không phải bản xem trước trong claude.ai)
+if ("serviceWorker" in navigator && !window.claude && (location.protocol === "https:" || location.hostname === "localhost")) {
+  window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
+}
 </script>
 </body></html>
